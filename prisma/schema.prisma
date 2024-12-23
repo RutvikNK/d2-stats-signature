@@ -32,9 +32,9 @@ model Character {
   player Player @relation(fields: [player_id], references: [player_id])
   player_id Int
   date_last_played DateTime? @default(now())
-
   equipped_weapons Equipped_Weapons[]
   equipped_armor Equipped_Armor[]
+  activtiy_stats Activity_Stats[]
 }
 
 model Weapon {
@@ -48,6 +48,7 @@ model Weapon {
   rarity RARITY @default(COMMON)
 
   equipped_on Equipped_Weapons[]
+  activtiy_stats Activity_Stats[]
 }
 
 model Armor {
@@ -84,10 +85,40 @@ model Equipped_Armor {
   @@id(name: "equip_id", [character_id, armor_id])
 }
 
-enum CLASS {
+model Activity {
+  activity_id Int @id @default(autoincrement())
+  bng_activity_id BigInt @unique
+  activity_name String @db.VarChar(75)
+  max_fireteam_size Int @default(0)
+  type String @db.VarChar(100) @default("Activity_Type")
+  modifiers String @db.VarChar(500)
+
+  activtiy_stats Activity_Stats[]
+}
+
+model Activity_Stats {
+  character_id Int
+  activity_id Int 
+  activity Activity @relation(fields: [activity_id], references: [activity_id])
+  weapon Weapon @relation(fields: [weapon_id], references: [weapon_id])
+  character Character @relation(fields: [character_id], references: [character_id])
+
+  instance_id BigInt
+  activity_name String @db.VarChar(255)
+  weapon_id Int
+  weapon_name String @db.VarChar(255)
+  kills Int @default(0) @db.UnsignedInt
+  precision_kills Int @default(0) @db.UnsignedInt
+  precision_kills_percent Decimal @db.Decimal(5, 2) @default(0.0)
+  character_class CLASS
+
+  @@id(name: "stats_id", [weapon_id, character_id, instance_id])
+}
+
+enum CLASS{
   HUNTER
-  TITAN
   WARLOCK
+  TITAN
 }
 
 enum PLATFORM{
