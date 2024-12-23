@@ -12,3 +12,37 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model Player {
+  player_id Int @id @default(autoincrement())
+  destiny_id BigInt @unique @db.UnsignedBigInt()
+  bng_id BigInt @unique @db.UnsignedBigInt()
+  bng_username String @db.VarChar(255)
+  date_created DateTime @default("1991-05-07T00:00:00+00:00")
+  date_last_played DateTime? @default("1991-05-07T00:00:00+00:00") 
+  platform PLATFORM
+  character_ids String @unique
+  characters Character[]
+}
+
+model Character {
+  character_id Int @id @default(autoincrement())
+  bng_character_id BigInt @unique @db.UnsignedBigInt()
+  class CLASS @default(HUNTER)
+  player Player @relation(fields: [player_id], references: [player_id])
+  player_id Int
+  date_last_played DateTime? @default(now())
+}
+
+enum CLASS {
+  HUNTER
+  TITAN
+  WARLOCK
+}
+
+enum PLATFORM{
+  XBOX
+  PSN
+  STEAM
+  BLIZZARD
+}
