@@ -32,6 +32,9 @@ model Character {
   player Player @relation(fields: [player_id], references: [player_id])
   player_id Int
   date_last_played DateTime? @default(now())
+
+  equipped_weapons Equipped_Weapons[]
+  equipped_armor Equipped_Armor[]
 }
 
 model Weapon {
@@ -43,6 +46,8 @@ model Weapon {
   slot WEAPON_SLOT_TYPE @default(KINETIC)
   damage_type DAMAGE_TYPE @default(KINETIC)
   rarity RARITY @default(COMMON)
+
+  equipped_on Equipped_Weapons[]
 }
 
 model Armor {
@@ -51,6 +56,32 @@ model Armor {
   armor_name String @db.VarChar(255)
   slot ARMOR_SLOT_TYPE @default(CLASS_ITEM)
   rarity RARITY @default(COMMON)
+  equipped_on Equipped_Armor[]
+}
+
+model Equipped_Weapons {
+  weapon Weapon? @relation(fields: [weapon_id], references: [weapon_id])
+  weapon_id Int
+
+  character Character @relation(fields: [character_id], references: [character_id])
+  character_id Int
+
+  slot_type WEAPON_SLOT_TYPE
+  main_stat String @db.VarChar(20) @default("0")
+
+  @@id(name: "equip_id", [character_id, weapon_id])
+}
+
+model Equipped_Armor {
+  armor Armor @relation(fields: [armor_id], references: [armor_id])
+  armor_id Int
+
+  character Character @relation(fields: [character_id], references: [character_id])
+  character_id Int
+  
+  slot_type ARMOR_SLOT_TYPE
+
+  @@id(name: "equip_id", [character_id, armor_id])
 }
 
 enum CLASS {
