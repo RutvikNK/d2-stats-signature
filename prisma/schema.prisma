@@ -34,6 +34,25 @@ model Character {
   date_last_played DateTime? @default(now())
 }
 
+model Weapon {
+  weapon_id Int @id @default(autoincrement())
+  bng_weapon_id BigInt @unique @db.UnsignedBigInt()
+  weapon_name String @db.VarChar(255)
+  weapon_type WEAPON_TYPE @default(AUTO_RIFLE)
+  ammo_type AMMO_TYPE @default(PRIMARY)
+  slot WEAPON_SLOT_TYPE @default(KINETIC)
+  damage_type DAMAGE_TYPE @default(KINETIC)
+  rarity RARITY @default(COMMON)
+}
+
+model Armor {
+  armor_id Int @id @default(autoincrement())
+  bng_armor_id BigInt @unique @db.UnsignedBigInt()
+  armor_name String @db.VarChar(255)
+  slot ARMOR_SLOT_TYPE @default(CLASS_ITEM)
+  rarity RARITY @default(COMMON)
+}
+
 enum CLASS {
   HUNTER
   TITAN
@@ -45,4 +64,61 @@ enum PLATFORM{
   PSN
   STEAM
   BLIZZARD
+}
+
+enum RARITY {
+  COMMON
+  UNCOMMON
+  RARE
+  LEGENDARY
+  EXOTIC
+}
+
+enum ARMOR_SLOT_TYPE {
+  HELMET
+  GAUNTLETS
+  CHEST
+  BOOTS
+  CLASS_ITEM
+}
+
+enum DAMAGE_TYPE {
+  KINETIC
+  ARC
+  SOLAR
+  VOID
+  STASIS
+  STRAND
+}
+
+enum WEAPON_SLOT_TYPE {
+  KINETIC
+  ENERGY
+  POWER
+}
+
+enum AMMO_TYPE {
+  PRIMARY
+  SPECIAL
+  HEAVY
+}
+
+enum WEAPON_TYPE {
+  SIDEARM
+  HAND_CANNON
+  AUTO_RIFLE
+  PULSE_RIFLE
+  COMBAT_BOW
+  SUBMACHINE_GUN
+  SCOUT_RIFLE
+  SNIPER_RIFLE
+  SHOTGUN
+  GLAIVE
+  GRENADE_LAUNCHER
+  TRACE_RIFLE
+  FUSION_RIFLE
+  MACHINE_GUN
+  ROCKET_LAUNCHER
+  LINEAR_FUSION_RIFLE
+  SWORD
 }
