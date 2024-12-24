@@ -1,5 +1,7 @@
-from backend.bng_manifest.create_local_manifest import create_manifest, build_dict
 import pickle, os
+from dotenv import load_dotenv
+
+from backend.bng_manifest.create_local_manifest import create_manifest, build_dict
 
 class DestinyManifest:
     def __init__(self) -> None:
@@ -29,7 +31,9 @@ class DestinyManifest:
         self.define_manifest_data()
 
     def define_manifest_data(self):
-        MANIFEST_PATH = "/Users/ruts/Projects/RedKnightM/d2_manifest/"
+        load_dotenv()
+
+        MANIFEST_PATH = os.getenv('PATH_TO_MANIFEST')
 
         if os.path.isfile(f'{MANIFEST_PATH}manifest.content') == False:
             create_manifest()

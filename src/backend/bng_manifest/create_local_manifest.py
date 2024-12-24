@@ -6,14 +6,18 @@ Code from https://destinydevs.github.io/BungieNetPlatform/docs/Manifest
 # might not make sense to include all of them at the beginning, but will save time for new devs
 
 import requests, zipfile, os, json, sqlite3
+from dotenv import load_dotenv
 
-PATH = "/Users/ruts/Projects/RedKnightM/d2_manifest/"
+load_dotenv()
+
+PATH = os.getenv('PATH_TO_MANIFEST')
+X_API_KEY = os.getenv('X_API_KEY')
 
 def create_manifest():
     manifest_url = 'http://www.bungie.net/Platform/Destiny2/Manifest/'
 
     #get the manifest location from the json
-    r = requests.get(manifest_url, headers={'X-API-KEY': "6250b4fbc6044931b45897c8109d692e"})
+    r = requests.get(manifest_url, headers={'X-API-KEY': X_API_KEY})
     manifest = r.json()
     mani_url = 'http://www.bungie.net' + manifest['Response']['mobileWorldContentPaths']['en']
 
