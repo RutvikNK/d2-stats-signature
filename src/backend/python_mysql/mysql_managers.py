@@ -133,3 +133,45 @@ class DatabaseArmorManager:
         for armor in self.__armor:
             if armor.data["bng_armor_id"] == bng_armor_id:
                 return armor
+
+class DatabaseActivityManager:
+    def __init__(self, db_control: DatabaseExecutor) -> None:
+        self.__control: DatabaseExecutor = db_control
+        self.__activities: list[ActivityData] = []
+
+    def add_new_activity(self, activitiy_id: int) -> None:
+        # existing_activity = self.__control.select_rows("`Activity`", ["activitiy_id"], {"bng_activitiy_id": activitiy_id})
+
+        # if not existing_activity:
+            new_activity = DataFactory.get_activity(activitiy_id)
+            if new_activity not in self.__activities:
+                self.__activities.append(new_activity)
+
+            self.__control.insert_row("`Activity`", new_activity)
+
+class DatabaseActivityInstanceManager:
+    def __init__(self, db_control: DatabaseExecutor) -> None:
+        self.__control: DatabaseExecutor = db_control
+        self.__instances: list[ActivityInstanceData] = []
+    
+    def create_instance(self, instance_id: int) -> ActivityInstanceData:
+        new_instance = DataFactory.get_activity_instance(instance_id)
+
+        if new_instance not in self.__instances:
+            self.__instances.append(new_instance)
+
+        return new_instance
+    
+    def find_instance(self, instance_id: int) -> Optional[ActivityInstanceData]:
+        for instance in self.__instances:
+            if instance.instance_id == instance_id:
+                return instance
+
+    def create_instance_stats(self, instance_id: int):
+        instance = self.find_instance(instance_id)
+        
+        if instance:
+            instance.create_stats()
+
+    def get_instances(self) -> list[ActivityInstanceData]:
+        return self.__instances
