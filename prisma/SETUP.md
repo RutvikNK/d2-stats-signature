@@ -21,7 +21,7 @@
 3. **Set Up MySQL using Docker**:
     - Run the following command to start a MySQL container:
         ```sh
-        docker run --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=d2-stats-main -p 3306:33061 -d mysql:latest
+        docker run --name d2-stats-signature -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=d2-stats-main -p 3306:33061 -d mysql:latest
         ```
 
 4. **Set Up Environment Variables**:
