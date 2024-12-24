@@ -61,3 +61,35 @@ class DatabasePlayerManager:
             character_ids[i] = int(character_ids[i])  # type: ignore
 
         return character_ids, result[0][1] # type: ignore
+
+class DatabaseCharacterManager:
+    def __init__(self, db_control: DatabaseExecutor) -> None:
+        self.__control: DatabaseExecutor = db_control
+        self.__characters: list[CharacterData] = []
+
+    def add_new_character(self, member_id: int, member_type: int, character_id: int, player_id: int=-1) -> None:
+        # exisitng_char = self.__control.select_rows("`Character`", ["character_id"], {"bng_character_id": character_id})
+
+        # if not exisitng_char:
+            if player_id == -1:
+                player = self.__control.select_rows("`Player`", ["player_id"], {"destiny_id": member_id})
+                if player:
+                    player_id = player[0][0]  # type: ignore
+            
+            new_char = DataFactory.get_character(member_id, member_type, character_id, player_id)
+            
+            if new_char not in self.__characters:
+                self.__characters.append(new_char)
+
+            self.__control.insert_row("`Character`", new_char)
+
+    def get_activity_history(self, character_id: int, mode: int, count: int):
+        character = self.find_character(character_id)
+        if character:
+            instance_ids = character.get_activity_hist_instances(mode, count)
+            return instance_ids
+
+    def find_character(self, character_id: int) -> Optional[CharacterData]:
+        for character in self.__characters:
+            if character.character_id == character_id:
+                return character
