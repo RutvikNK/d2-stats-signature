@@ -1,5 +1,7 @@
 from typing import Optional
 from time import sleep
+from dotenv import load_dotenv
+import os
 
 from backend.bng_python.bng_api_connector import BungieConnector
 from backend.python_mysql.mysql_executor import DatabaseExecutor
@@ -18,7 +20,9 @@ from backend.bng_python.bng_data import (
     ActivityStatsData
 )
 
-BNG_CONN = BungieConnector("10E792629C2A47E19356B8A79EEFA640")
+load_dotenv()
+
+BNG_CONN = BungieConnector(os.getenv("X_API_KEY"))
 
 class DatabasePlayerManager:
     def __init__(self, db_control: DatabaseExecutor) -> None:
