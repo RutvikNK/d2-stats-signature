@@ -93,3 +93,43 @@ class DatabaseCharacterManager:
         for character in self.__characters:
             if character.character_id == character_id:
                 return character
+
+class DatabaseWeaponManager:
+    def __init__(self, db_control: DatabaseExecutor) -> None:
+        self.__control: DatabaseExecutor = db_control
+        self.__weapons: list[WeaponData] = []
+
+    def add_new_weapon(self, weapon_id: int) -> None:
+        # exisiting_weapon = self.__control.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": weapon_id})
+        
+        # if not exisiting_weapon:
+            new_weapon = DataFactory.get_weapon(weapon_id)  
+            if new_weapon not in self.__weapons:
+                self.__weapons.append(new_weapon)
+
+            self.__control.insert_row("`Weapon`", new_weapon)
+
+    def get_weapon(self, bng_weapon_id: int) -> Optional[WeaponData]:
+        for weapon in self.__weapons:
+            if weapon.data["bng_weapon_id"] == bng_weapon_id:
+                return weapon
+
+class DatabaseArmorManager:
+    def __init__(self, db_control: DatabaseExecutor) -> None:
+        self.__control: DatabaseExecutor = db_control
+        self.__armor: list[ArmorData] = []
+
+    def add_new_armor(self, armor_id: int) -> None:
+        # existing_armor = self.__control.select_rows("`Armor`", ["armor_id"], {"bng_armor_id": armor_id})
+        
+        # if not existing_armor:
+            new_armor = DataFactory.get_armor(armor_id)
+            if new_armor not in self.__armor:
+                self.__armor.append(new_armor)
+
+            self.__control.insert_row("`Armor`", new_armor)
+
+    def get_armor(self, bng_armor_id: int) -> Optional[ArmorData]:
+        for armor in self.__armor:
+            if armor.data["bng_armor_id"] == bng_armor_id:
+                return armor
