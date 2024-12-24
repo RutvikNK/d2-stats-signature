@@ -175,3 +175,52 @@ class DatabaseActivityInstanceManager:
 
     def get_instances(self) -> list[ActivityInstanceData]:
         return self.__instances
+
+class EquipmentManager:
+    def __init__(self, db_control: DatabaseExecutor, w_control: DatabaseWeaponManager, a_control: DatabaseArmorManager) -> None:
+        self.__control: DatabaseExecutor = db_control
+        self.__weapons: list[EquippedWeaponData] = []
+        self.__armor: list[EquippedArmorData] = []
+        self.__w_manager: DatabaseWeaponManager = w_control
+        self.__a_manager: DatabaseArmorManager = a_control
+
+    def add_new_weapon(self, bng_weapon_id: int, bng_character_id: int) -> None:
+        weapon = self.__w_manager.get_weapon(bng_weapon_id)
+
+        if not weapon:
+            self.__w_manager.add_new_weapon(bng_weapon_id)
+            weapon = self.__w_manager.get_weapon(bng_weapon_id)
+
+        weapon_equipment = DataFactory.get_equipped_weapon(weapon, bng_character_id)  # type: ignore
+        if weapon_equipment not in self.__weapons:
+            self.__weapons.append(weapon_equipment)
+
+        char_id = self.__control.select_rows("`Character`", ["character_id"], {"bng_character_id": bng_character_id})
+        weapon_id = self.__control.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": bng_weapon_id})
+        if char_id and weapon_id:
+            weapon_equipment.data["character_id"] = char_id[0][0]  # type: ignore
+            weapon_equipment.data["weapon_id"] = weapon_id[0][0]  # type: ignore
+
+            self.__control.insert_row("`Equipped_Weapons`", weapon_equipment)
+
+    def add_new_armor(self, bng_armor_id: int, bng_character_id: int) -> None:
+        armor = self.__a_manager.get_armor(bng_armor_id)
+        
+
+        if not armor:
+            self.__a_manager.add_new_armor(bng_armor_id)
+            armor = self.__a_manager.get_armor(bng_armor_id)
+
+        armor_equipment = DataFactory.get_equipped_armor(armor, bng_character_id)  # type: ignore
+
+        if armor_equipment not in self.__armor:
+            self.__armor.append(armor_equipment)
+
+        char_id = self.__control.select_rows("`Character`", ["character_id"], {"bng_character_id": bng_character_id})
+        armor_id = self.__control.select_rows("`Armor`", ["armor_id"], {"bng_armor_id": bng_armor_id})
+        if char_id:
+            armor_equipment.data["character_id"] = char_id[0][0]  # type: ignore
+            armor_equipment.data["armor_id"] = armor_id[0][0]  # type: ignore
+
+            self.__control.insert_row("`Equipped_Armor`", armor_equipment)
+            
