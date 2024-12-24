@@ -223,4 +223,121 @@ class EquipmentManager:
             armor_equipment.data["armor_id"] = armor_id[0][0]  # type: ignore
 
             self.__control.insert_row("`Equipped_Armor`", armor_equipment)
+
+class DatabaseManager:
+    def __init__(
+            self, 
+            db_control: DatabaseExecutor, 
+            a_control: DatabaseActivityManager, 
+            w_control: DatabaseWeaponManager, 
+            c_control: DatabaseCharacterManager, 
+            p_control: DatabasePlayerManager,
+            e_control: EquipmentManager) -> None:
+        
+        self.__control: DatabaseExecutor = db_control
+        self.__a_manager: DatabaseActivityManager = a_control
+        self.__w_manager: DatabaseWeaponManager = w_control
+        self.__c_manager: DatabaseCharacterManager = c_control
+        self.__p_manager: DatabasePlayerManager = p_control
+        self.__e_manager: EquipmentManager = e_control
+
+        self.__stats_data: list[ActivityStatsData] = []
+
+    def add_new_stat_block(self, instance: ActivityInstanceData) -> None:
+        instance_stats = instance.get_instance_stats()
+
+        for stat in instance_stats:
+            if stat.data:
+                self.__a_manager.add_new_activity(stat.og_data["bng_activity_id"])
+                self.__w_manager.add_new_weapon(stat.og_data["bng_weapon_id"])
+                self.__p_manager.add_new_player(stat.participant["destiny_id"], stat.participant["member_type"])
+                self.__c_manager.add_new_character(stat.participant["destiny_id"], stat.participant["member_type"], stat.og_data["bng_character_id"])
+
+                # figure out a better way to do this :(
+                activity_id_result = self.__control.select_rows("`Activity`", ["activity_id"], {"bng_activity_id": stat.og_data["bng_activity_id"]})
+                if activity_id_result:
+                    stat.data["activity_id"] = activity_id_result[0][0]  # type: ignore
+                
+                weapon_id_result = self.__control.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": stat.og_data["bng_weapon_id"]})
+                if weapon_id_result:
+                    stat.data["weapon_id"] = weapon_id_result[0][0]   # type: ignore
+
+                character_id_result = self.__control.select_rows("`Character`", ["character_id"], {"bng_character_id": stat.og_data["bng_character_id"]})
+                if character_id_result:
+                    stat.data["character_id"] = character_id_result[0][0]   # type: ignore
+                
+                if stat not in self.__stats_data:
+                    self.__stats_data.append(stat)
+
+                self.__control.insert_row("`Activity_Stats`", stat)
+
+    def add_character_equipment(self, character_id: int) -> None:
+        character = self.__c_manager.find_character(character_id)
+        if character:
+            equipped_weapons = character.equipment["weapons"]
+            equipped_armor = character.equipment["armor"]
+            bng_character_id = character.data["bng_character_id"]
             
+            if equipped_weapons:
+
+                for weapon_id in equipped_weapons:
+                    self.__e_manager.add_new_weapon(weapon_id, bng_character_id)
+
+            if equipped_armor:
+                for armor_id in equipped_armor:
+                    self.__e_manager.add_new_armor(armor_id, bng_character_id)
+
+def main():
+    connection = SQLConnector("test", 33061)
+    control = DatabaseExecutor(connection)
+    
+    player_manager = DatabasePlayerManager(control)
+    char_manager = DatabaseCharacterManager(control)
+    weapon_manager = DatabaseWeaponManager(control)
+    armor_manager = DatabaseArmorManager(control)
+    activity_manager = DatabaseActivityManager(control)
+    instance_manager = DatabaseActivityInstanceManager(control)
+    equipment_manager = EquipmentManager(control, weapon_manager, armor_manager)
+
+    db_manager = DatabaseManager(control, activity_manager, weapon_manager, char_manager, player_manager, equipment_manager)
+
+    members = {
+        4611686018441248186: 1,
+        4611686018466583801: 2,
+        4611686018467428939: 3,
+        4611686018467632157: 3,
+        4611686018456510427: 1,
+    }
+    activities = [type.value for type in ACTIVITY_TYPE]
+
+    for member_id, player_type in members.items():
+        player_manager.add_new_player(member_id, player_type)
+        result = player_manager.get_character_and_player_ids(member_id)
+        character_ids = result[0]
+        player_id = result[1]
+
+        for char_id in character_ids:
+            char_manager.add_new_character(member_id, player_type, int(char_id), player_id)  # type: ignore
+            db_manager.add_character_equipment(int(char_id))
+
+        for activity in activities:
+            print(f"{member_id=}")
+            print(f"{player_type=}")
+            print(f"{activity=}")
+            sleep(5)
+            instance_ids = char_manager.get_activity_history(character_ids[0], activity, 5)  # type: ignore
+            print(instance_ids)
+            if instance_ids:
+                for id in instance_ids:
+                    instance_manager.create_instance(id)
+                    instance_manager.create_instance_stats(id)
+            
+            instance_list = instance_manager.get_instances()
+            db_manager.add_new_stat_block(instance_list[-1])
+        sleep(5)
+    
+    print("DB population complete!")
+
+if __name__ == "__main__":
+    main()
+    
