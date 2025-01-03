@@ -4,9 +4,18 @@ from typing import Optional
 from dotenv import load_dotenv
 import os
 
-from backend.bng_python.bng_api_connector import BungieConnector
-import backend.bng_manifest.destiny_manifest as manifest
-from backend.bng_python.bng_types import *
+from backend.extract.bng_api_connector import BungieConnector
+import backend.manifest.destiny_manifest as manifest
+from backend.data.bng_types import (
+    PLATFORM,
+    CLASS,
+    WEAPON_SLOT_TYPE,
+    WEAPON_TYPE,
+    ARMOR_SLOT_TYPE,
+    AMMO_TYPE,
+    DAMAGE_TYPE,
+    RARITY
+)
  
 MANIFEST = manifest.DestinyManifest()
 
@@ -38,6 +47,7 @@ class PlayerData(BungieData):
         self._id = membership_id
         self._type = membership_type
         self._bng_mem_endpoint = f"{self.root}/User/GetMembershipsById/{membership_id}/{membership_type}/"
+        self._dst_prof_endpoint = f"{self.root}/Destiny2/{self._type}/Profile/{self._id}/?components={100}"
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, PlayerData):
@@ -45,9 +55,15 @@ class PlayerData(BungieData):
         else:
             return False
 
-    def define_data(self) -> None:
-        bng_mem_data = self.get_data(self._bng_mem_endpoint)
-        destiny_prof_data = self.get_data(f"{self.root}/Destiny2/{self._type}/Profile/{self._id}/?components={100}")
+    def define_data(self, bng_member_endpoint: str="", destiny_prof_endpoint: str="") -> None:
+        if not bng_member_endpoint:
+            bng_member_endpoint = self._bng_mem_endpoint
+
+        if not destiny_prof_endpoint:
+            destiny_prof_endpoint = self._dst_prof_endpoint
+
+        bng_mem_data = self.get_data(bng_member_endpoint)
+        destiny_prof_data = self.get_data(destiny_prof_endpoint)
         
         if bng_mem_data and destiny_prof_data:
             try:

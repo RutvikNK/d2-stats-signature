@@ -11,3 +11,10 @@ class BungieConnector:
             json_out = json.loads(response.read())
         if json_out:
             return json_out["Response"]
+        
+def main():
+    conn = BungieConnector("6250b4fbc6044931b45897c8109d692e")
+    conn.get_url_request("https://www.bungie.net/Platform/User/GetMembershipsById/4611686018441248186/1/")
+
+if __name__ == "__main__":
+    main()
