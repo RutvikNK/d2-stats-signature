@@ -1,0 +1,7 @@
+uv
+python-dotenv
+requests
+mysql-connector-python
+urllib
+pytest
+pytest-cov
