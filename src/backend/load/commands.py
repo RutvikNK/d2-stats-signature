@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from backend.python_mysql.mysql_connector import SQLConnector
-from backend.bng_python.bng_data import BungieData
+from backend.load.connector import SQLConnector
+from backend.data.bng_data import BungieData
 
 class Command(ABC):
     """

@@ -3,12 +3,11 @@ from time import sleep
 from dotenv import load_dotenv
 import os
 
-from backend.bng_python.bng_api_connector import BungieConnector
-from backend.python_mysql.mysql_executor import DatabaseExecutor
-from backend.python_mysql.mysql_connector import SQLConnector
-from backend.bng_python.bng_data import DataFactory
-from backend.bng_python.bng_types import *
-from backend.bng_python.bng_data import (
+from backend.extract.bng_api_connector import BungieConnector
+from backend.load.executor import DatabaseExecutor
+from backend.load.connector import SQLConnector
+from backend.data.bng_types import *
+from backend.data.bng_data import (
     PlayerData, 
     CharacterData, 
     WeaponData,
@@ -17,7 +16,8 @@ from backend.bng_python.bng_data import (
     EquippedArmorData, 
     ActivityData, 
     ActivityInstanceData, 
-    ActivityStatsData
+    ActivityStatsData,
+    DataFactory
 )
 
 load_dotenv()

@@ -13,7 +13,7 @@ load_dotenv()
 PATH = os.getenv('PATH_TO_MANIFEST')
 X_API_KEY = os.getenv('X_API_KEY')
 
-def create_manifest():
+def create_manifest(path: str | None=PATH, x_api_key: str | None=X_API_KEY):
     manifest_url = 'http://www.bungie.net/Platform/Destiny2/Manifest/'
 
     #get the manifest location from the json
@@ -23,21 +23,21 @@ def create_manifest():
 
     #Download the file, write it to 'MANZIP'
     r = requests.get(mani_url)
-    with open(f"{PATH}MANZIP", "wb") as zip:
+    with open(f"{path}/MANZIP", "wb") as zip:
         zip.write(r.content)
     print("Download Complete!")
 
     #Extract the file contents, and rename the extracted file
     # to 'Manifest.content'
-    with zipfile.ZipFile(f"{PATH}MANZIP") as zip:
+    with zipfile.ZipFile(f"{path}/MANZIP") as zip:
         name = zip.namelist()
         zip.extractall()
-    os.rename(name[0], f'{PATH}Manifest.content')
+    os.rename(name[0], f'{path}/Manifest.content')
     print('Unzipped!')
 
-def build_dict(hash_dict):
+def build_dict(hash_dict, path: str | None=PATH):
     #connect to the manifest
-    con = sqlite3.connect(f'{PATH}manifest.content')
+    con = sqlite3.connect(f'{path}/manifest.content')
     print('Connected')
     #create a cursor object
     cur = con.cursor()
