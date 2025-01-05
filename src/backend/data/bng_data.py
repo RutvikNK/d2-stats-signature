@@ -115,8 +115,9 @@ class CharacterData(PlayerData):
             except KeyError:
                 pass
 
-    def get_activity_hist_instances(self, mode: int, count: int) -> list[int]:
-        path = f"{self.root}/Destiny2/{self._type}/Account/{self._id}/Character/{self._character_id}/Stats/Activities/?count={count}&mode={mode}&page=1"
+    def get_activity_hist_instances(self, mode: int, count: int, path: str="") -> list[int]:
+        if not path:
+            path = f"{self.root}/Destiny2/{self._type}/Account/{self._id}/Character/{self._character_id}/Stats/Activities/?count={count}&mode={mode}&page=1"
         data = self.get_data(path)
 
         instance_ids: list[int] = []
