@@ -1,4 +1,5 @@
-import pickle, os
+import pickle
+import os
 from dotenv import load_dotenv
 
 from backend.manifest.create_manifest import create_manifest, build_dict
@@ -35,7 +36,7 @@ class DestinyManifest:
     def define_manifest_data(self):
         load_dotenv()
 
-        if os.path.isfile(f'{self.__manifest_path}/manifest.content') == False:
+        if os.path.isfile(f'{self.__manifest_path}/manifest.content') is False:
             create_manifest()
             self.all_data = build_dict(self.hashes)
             with open(f'{self.__manifest_path}/manifest.pickle', 'wb') as data:

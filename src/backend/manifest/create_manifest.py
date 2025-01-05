@@ -5,7 +5,11 @@ Code from https://destinydevs.github.io/BungieNetPlatform/docs/Manifest
 # All of these imports used, if the code is broken down into several sections like it is on the wiki,
 # might not make sense to include all of them at the beginning, but will save time for new devs
 
-import requests, zipfile, os, json, sqlite3
+import requests
+import zipfile
+import os
+import json
+import sqlite3
 from dotenv import load_dotenv
 
 load_dotenv()
