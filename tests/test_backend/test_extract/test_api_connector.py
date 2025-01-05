@@ -1,24 +1,26 @@
 import json
+import unittest
+from unittest.mock import patch
 
 from backend.extract.bng_api_connector import BungieConnector
 
-def test_successful_bng_api_response(mocker):
-    conn = BungieConnector("test_api_key")
+class APIConnectorTestCase(unittest.TestCase):
+    @patch("backend.extract.bng_api_connector.urlopen")
+    def test_successful_bng_api_response(self, mock_urlopen):
+        conn = BungieConnector("test_api_key")
 
-    mock_urlopen = mocker.patch("backend.extract.bng_api_connector.urlopen")
-    response_data = {"Response": {"test_response": "player1"}}
-    mock_urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(response_data)
+        response_data = {"Response": {"test_response": "player1"}}
+        mock_urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(response_data)
 
-    test_path = "https://example.com/api"
-    result = conn.get_url_request(test_path)
-    assert result == response_data.get("Response")
+        test_path = "https://example.com/api"
+        result = conn.get_url_request(test_path)
+        assert result == response_data.get("Response")
 
-def test_unsuccessful_bng_api_response(mocker):
-    conn = BungieConnector("test_api_key")
+    @patch("backend.extract.bng_api_connector.urlopen")
+    def test_unsuccessful_bng_api_response(self, mock_urlopen):
+        conn = BungieConnector("test_api_key")
+        mock_urlopen.return_value.__enter__.return_value.read.return_value = json.dumps("")
 
-    mock_urlopen = mocker.patch("backend.extract.bng_api_connector.urlopen")
-    mock_urlopen.return_value.__enter__.return_value.read.return_value = json.dumps("")
-
-    test_path = "https://example.com/api"
-    result = conn.get_url_request(test_path)
-    assert result is None
+        test_path = "https://example.com/api"
+        result = conn.get_url_request(test_path)
+        assert result is None
