@@ -232,4 +232,68 @@ class CharacterDataTestCase(unittest.TestCase):
 
         assert self.character.data == {}
         assert self.character.equipment == {}
-    
+
+    def test_get_activity_inst_hist_single(self):
+        mock_activity_inst_hist_data = {
+            "activities": [
+                {
+                    "activityDetails": {
+                        "instanceId": "101010101"
+                    }
+                }
+            ]
+        }
+        self.conn.get_url_request.return_value = mock_activity_inst_hist_data
+
+        test_activity_inst_path = "https://example.com/api/activity-instance-history"
+        instance_ids = self.character.get_activity_hist_instances(1, 1, test_activity_inst_path)
+        expected_ids = [101010101]
+
+        assert instance_ids == expected_ids
+
+    def test_get_activity_inst_hist(self):
+        mock_activity_inst_hist_data = {
+            "activities": [
+                {
+                    "activityDetails": {
+                        "instanceId": "101010101"
+                    }
+                },
+                {
+                    "activityDetails": {
+                        "instanceId": "202020202"
+                    }
+                },
+                {
+                    "activityDetails": {
+                        "instanceId": "303030303"
+                    }
+                },
+                {
+                    "activityDetails": {
+                        "instanceId": "404040404"
+                    }
+                },
+                {
+                    "activityDetails": {
+                        "instanceId": "505050505"
+                    }
+                }
+            ]
+        }
+
+        self.conn.get_url_request.return_value = mock_activity_inst_hist_data
+
+        test_activity_inst_path = "https://example.com/api/activity-instance-history"
+        instance_ids = self.character.get_activity_hist_instances(1, 1, test_activity_inst_path)
+        expected_ids = [101010101, 202020202, 303030303, 404040404, 505050505]
+
+        assert instance_ids == expected_ids
+
+    def test_unsuccessful_get_activity_inst_hist(self):
+        self.conn.get_url_request.return_value = None
+
+        test_activity_inst_path = "https://example.com/api/activity-instance-history"
+        instance_ids = self.character.get_activity_hist_instances(1, 1, test_activity_inst_path)
+
+        assert instance_ids == []
