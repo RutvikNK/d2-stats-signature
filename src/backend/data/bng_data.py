@@ -98,7 +98,7 @@ class CharacterData(PlayerData):
 
     def define_data(self):
         char_data = self.get_data(f"{self._char_data_endpoint}?components=Characters")
-        equipped_item_ids = self.__get_all_equipped_items()
+        equipped_item_ids = self.get_all_equipped_items()
         
         if char_data:
             try:
@@ -126,8 +126,11 @@ class CharacterData(PlayerData):
 
         return instance_ids
 
-    def __get_all_equipped_items(self) -> list[str]:
-        char_equipped_data = self.get_data(f"{self._char_data_endpoint}?components=CharacterEquipment")
+    def get_all_equipped_items(self, equip_path: str="") -> list[str]:
+        if not equip_path:
+            char_equipped_data = self.get_data(f"{self._char_data_endpoint}?components=CharacterEquipment")
+        else:
+            char_equipped_data = self.get_data(equip_path)
         
         item_ids = []
         if char_equipped_data:
