@@ -159,11 +159,14 @@ class CharacterData(PlayerData):
         return self._character_id
 
 class WeaponData(BungieData):
-    def __init__(self, connection: BungieConnector, weapon_id: int) -> None:
+    def __init__(self, connection: BungieConnector, weapon_id: int, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         super().__init__(connection)
         self.__data: dict = dict()
         self._weapon_id = weapon_id
-        self._manifest_data = MANIFEST.all_data["DestinyInventoryItemDefinition"][self._weapon_id]
+        try:
+            self._manifest_data = manifest.all_data["DestinyInventoryItemDefinition"][self._weapon_id]
+        except KeyError:
+            self._manifest_data = dict()
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, WeaponData):
@@ -172,16 +175,22 @@ class WeaponData(BungieData):
             return False
 
     def define_data(self):
-        self.__data["bng_weapon_id"] = self._weapon_id
-        
-        weapon_type = self._manifest_data["itemTypeDisplayName"].upper().replace(" ", "_")
-        self.__data["weapon_type"] = WEAPON_TYPE[weapon_type].name
+        if self._manifest_data:
+            try:
+                self.__data["bng_weapon_id"] = self._weapon_id
+            
+                weapon_type = self._manifest_data["itemTypeDisplayName"].upper().replace(" ", "_")
+                self.__data["weapon_type"] = WEAPON_TYPE[weapon_type].name
 
-        self.__data["weapon_name"] = self._manifest_data["displayProperties"]["name"]
-        self.__data["ammo_type"] = AMMO_TYPE(self._manifest_data["equippingBlock"]["ammoType"]).name
-        self.__data["slot"] = WEAPON_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
-        self.__data["damage_type"]  = DAMAGE_TYPE(self._manifest_data["damageTypes"][0]).name
-        self.__data["rarity"] = RARITY[self._manifest_data["itemTypeAndTierDisplayName"].split(" ")[0].upper()].name
+                self.__data["weapon_name"] = self._manifest_data["displayProperties"]["name"]
+                self.__data["ammo_type"] = AMMO_TYPE(self._manifest_data["equippingBlock"]["ammoType"]).name
+                self.__data["slot"] = WEAPON_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+                self.__data["damage_type"]  = DAMAGE_TYPE(self._manifest_data["damageTypes"][0]).name
+                self.__data["rarity"] = RARITY[self._manifest_data["itemTypeAndTierDisplayName"].split(" ")[0].upper()].name
+            except KeyError:
+                pass
+        else:
+            self.__data.clear()
 
     @property
     def data(self) -> dict:

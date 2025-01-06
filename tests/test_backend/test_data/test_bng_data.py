@@ -1,6 +1,6 @@
 import pytest
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from backend.data.bng_data import (
     PlayerData,
@@ -13,6 +13,7 @@ from backend.data.bng_data import (
     ActivityInstanceData,
     ActivityStatsData
 )
+from backend.manifest.destiny_manifest import DestinyManifest
 
 class PlayerDataTestCase(unittest.TestCase):
     def setUp(self) -> None:
@@ -297,3 +298,41 @@ class CharacterDataTestCase(unittest.TestCase):
         instance_ids = self.character.get_activity_hist_instances(1, 1, test_activity_inst_path)
 
         assert instance_ids == []
+
+class WeaponDataTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.manifest = DestinyManifest()
+        self.good_weapon_id = 1363886209
+        self.bad_weapon_id = 1234567890
+
+    def test_successful_manifest_init(self):
+        weapon = WeaponData(self.conn, self.good_weapon_id, self.manifest)
+        assert weapon._manifest_data
+    
+    def test_unsuccessful_manifest_init(self):
+        weapon = WeaponData(self.conn, self.bad_weapon_id, self.manifest)
+        assert not weapon._manifest_data
+    
+    def test_successful_weapon_def_data(self):
+        weapon = WeaponData(self.conn, self.good_weapon_id, self.manifest)
+        weapon.define_data()
+
+        expected_weapon_data = {
+            "bng_weapon_id": 1363886209,
+            "weapon_type": "ROCKET_LAUNCHER",
+            "weapon_name": "Gjallarhorn",
+            "ammo_type": "HEAVY",
+            "slot": "POWER",
+            "damage_type": "SOLAR",
+            "rarity": "EXOTIC"
+        }
+        assert weapon.data == expected_weapon_data
+
+    def test_unsuccessful_weapon_def_data(self):
+        weapon = WeaponData(self.conn, self.bad_weapon_id, self.manifest)
+        weapon.define_data()
+
+        assert weapon.data == {}
+
+        
