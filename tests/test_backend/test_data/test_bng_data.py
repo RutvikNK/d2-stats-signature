@@ -306,11 +306,11 @@ class WeaponDataTestCase(unittest.TestCase):
         self.good_weapon_id = 1363886209
         self.bad_weapon_id = 1234567890
 
-    def test_successful_manifest_init(self):
+    def test_successful_weapon_manifest_init(self):
         weapon = WeaponData(self.conn, self.good_weapon_id, self.manifest)
         assert weapon._manifest_data
     
-    def test_unsuccessful_manifest_init(self):
+    def test_unsuccessful_weapon_manifest_init(self):
         weapon = WeaponData(self.conn, self.bad_weapon_id, self.manifest)
         assert not weapon._manifest_data
     
@@ -335,4 +335,35 @@ class WeaponDataTestCase(unittest.TestCase):
 
         assert weapon.data == {}
 
-        
+class ArmorDataTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.manifest = DestinyManifest()
+        self.good_armor_id = 1362342075
+        self.bad_armor_id = 1234567890
+    
+    def test_successful_armor_manifest_init(self):
+        armor = ArmorData(self.conn, self.good_armor_id, self.manifest)
+        assert armor._manifest_data
+    
+    def test_unsuccessful_armor_manifest_init(self):
+        armor = ArmorData(self.conn, self.bad_armor_id, self.manifest)
+        assert not armor._manifest_data
+    
+    def test_successful_armor_def_data(self):
+        armor = ArmorData(self.conn, self.good_armor_id, self.manifest)
+        armor.define_data()
+
+        expected_armor_data = {
+            "bng_armor_id": 1362342075,
+            "armor_name": "Helm of Saint-14",
+            "slot": "HELMET",
+            "rarity": "EXOTIC"
+        }
+        assert armor.data == expected_armor_data
+
+    def test_unsuccessful_armor_def_data(self):
+        armor = ArmorData(self.conn, self.bad_armor_id, self.manifest)
+        armor.define_data()
+
+        assert armor.data == {}

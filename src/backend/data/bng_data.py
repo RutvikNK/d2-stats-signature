@@ -226,11 +226,14 @@ class EquippedWeaponData(BungieData):
         return self.__data
 
 class ArmorData(BungieData):
-    def __init__(self, connection: BungieConnector, armor_id: int) -> None:
+    def __init__(self, connection: BungieConnector, armor_id: int, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         super().__init__(connection)
         self.__data: dict = dict()
         self.__armor_id = armor_id
-        self.__manifest_data = MANIFEST.all_data["DestinyInventoryItemDefinition"][self.__armor_id]
+        try:
+            self._manifest_data = manifest.all_data["DestinyInventoryItemDefinition"][self.__armor_id]
+        except KeyError:
+            self._manifest_data = dict()
     
     def __eq__(self, value: object) -> bool:
         if isinstance(value, ArmorData):
@@ -239,11 +242,16 @@ class ArmorData(BungieData):
             return False
 
     def define_data(self):
-        self.__data["bng_armor_id"] = self.__armor_id
-        self.__data["armor_name"] = self.__manifest_data["displayProperties"]["name"]
-        self.__data["slot"] = ARMOR_SLOT_TYPE(self.__manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
-        self.__data["rarity"] = RARITY[self.__manifest_data["itemTypeAndTierDisplayName"].split(" ")[0].upper()].name
-
+        if self._manifest_data:
+            try:
+                self.__data["bng_armor_id"] = self.__armor_id
+                self.__data["armor_name"] = self._manifest_data["displayProperties"]["name"]
+                self.__data["slot"] = ARMOR_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+                self.__data["rarity"] = RARITY[self._manifest_data["itemTypeAndTierDisplayName"].split(" ")[0].upper()].name
+            except KeyError:
+                pass
+        else:
+            self.__data.clear()
     @property
     def data(self) -> dict:
         return self.__data
@@ -490,67 +498,67 @@ class DataFactory:
         return armor
 
 
-def main():
-    load_dotenv()
+# def main():
+#     load_dotenv()
 
-    bng_conn = BungieConnector(os.getenv("X_API_KEY"))
-    mem_id = 4611686018441248186
-    mem_type = 1
+#     bng_conn = BungieConnector(os.getenv("X_API_KEY"))
+#     mem_id = 4611686018441248186
+#     mem_type = 1
 
-    player = PlayerData(bng_conn, mem_id, mem_type)
-    player.define_data()
-    for k, v in player.data.items():
-        print(f"{k}: {v}")
+#     player = PlayerData(bng_conn, mem_id, mem_type)
+#     player.define_data()
+#     for k, v in player.data.items():
+#         print(f"{k}: {v}")
     
-    # player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
-    # player_character.define_data()
-    # print()
-    # for k, v in player_character.data.items():
-    #     print(f"{k}: {v}")
+#     # player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
+#     # player_character.define_data()
+#     # print()
+#     # for k, v in player_character.data.items():
+#     #     print(f"{k}: {v}")
 
-    # riptide_id = player_character.equipment["equipped_weapons"][0]
-    # riptide = WeaponData(bng_conn, riptide_id)
-    # riptide.define_data()
-    # print()
-    # for k, v in riptide.data.items():
-    #     print(f"{k}: {v}")
+#     # riptide_id = player_character.equipment["equipped_weapons"][0]
+#     # riptide = WeaponData(bng_conn, riptide_id)
+#     # riptide.define_data()
+#     # print()
+#     # for k, v in riptide.data.items():
+#     #     print(f"{k}: {v}")
 
-    # helmet_id = player_character.equipment["equipped_armor"][0]
-    # helmet = ArmorData(bng_conn, helmet_id)
-    # helmet.define_data()
-    # print()
-    # for k, v in helmet.data.items():
-    #     print(f"{k}: {v}")
+#     # helmet_id = player_character.equipment["equipped_armor"][0]
+#     # helmet = ArmorData(bng_conn, helmet_id)
+#     # helmet.define_data()
+#     # print()
+#     # for k, v in helmet.data.items():
+#     #     print(f"{k}: {v}")
 
-    # rumble_data = player_character.get_activity_hist_instances(48, 1)
-    # # for k, v in rumble_data.items(): # type: ignore
-    # #     print(f"{k}: {v}:")
+#     # rumble_data = player_character.get_activity_hist_instances(48, 1)
+#     # # for k, v in rumble_data.items(): # type: ignore
+#     # #     print(f"{k}: {v}:")
         
-    # rumble_id = 2259621230
-    # rumble = ActivityData(bng_conn, rumble_id)
-    # rumble.define_data()
-    # print()
-    # for k, v in rumble.data.items():
-    #     print(f"{k}: {v}")
+#     # rumble_id = 2259621230
+#     # rumble = ActivityData(bng_conn, rumble_id)
+#     # rumble.define_data()
+#     # print()
+#     # for k, v in rumble.data.items():
+#     #     print(f"{k}: {v}")
     
-    # rumble_instance_id = int(rumble_data[0])  # type: ignore
-    # rumble_instance = ActivityInstanceData(bng_conn, rumble_instance_id)
-    # rumble_instance.define_data()
-    # print()
-    # for k, v in rumble_instance._character_pgdata.items():
-    #     print(f"{k}: {v}")
+#     # rumble_instance_id = int(rumble_data[0])  # type: ignore
+#     # rumble_instance = ActivityInstanceData(bng_conn, rumble_instance_id)
+#     # rumble_instance.define_data()
+#     # print()
+#     # for k, v in rumble_instance._character_pgdata.items():
+#     #     print(f"{k}: {v}")
 
-    # rumble_all_stats = []
-    # for character, weapons in rumble_instance.participants_data.items():
-    #     for weapon_id in weapons:
-    #         new_stats = ActivityStatsData(bng_conn, rumble_instance_id, weapon_id, character, rumble_id)
-    #         new_stats.define_data()
-    #         rumble_all_stats.append(new_stats)
+#     # rumble_all_stats = []
+#     # for character, weapons in rumble_instance.participants_data.items():
+#     #     for weapon_id in weapons:
+#     #         new_stats = ActivityStatsData(bng_conn, rumble_instance_id, weapon_id, character, rumble_id)
+#     #         new_stats.define_data()
+#     #         rumble_all_stats.append(new_stats)
     
-    # for stat in rumble_all_stats:
-    #     print()
-    #     for k, v in stat.data.items():
-    #         print(f"{k}: {v}")
+#     # for stat in rumble_all_stats:
+#     #     print()
+#     #     for k, v in stat.data.items():
+#     #         print(f"{k}: {v}")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
