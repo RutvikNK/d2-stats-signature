@@ -367,3 +367,93 @@ class ArmorDataTestCase(unittest.TestCase):
         armor.define_data()
 
         assert armor.data == {}
+
+class EquippedWeaponTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.manifest = DestinyManifest()
+        self.weapon_to_equip = WeaponData(self.conn, 1363886209)
+        self.weapon_to_equip.define_data()
+
+        self.equipped_weapon = EquippedWeaponData(self.conn, self.weapon_to_equip, 10101010101)
+
+    def test_successful_equipped_weapon_init(self):
+        expected_id = 1363886209
+        actual_id = self.equipped_weapon._EquippedWeaponData__bng_weapon_id
+
+        assert expected_id == actual_id
+        assert self.equipped_weapon._manifest_data
+
+    def test_unsuccessful_equipped_weapon_init(self):
+        bad_id = 1234567890
+        bad_weapon = WeaponData(self.conn, bad_id)
+        bad_equipped_weapon = EquippedWeaponData(self.conn, bad_weapon, 10101010101)
+
+        assert bad_equipped_weapon._EquippedWeaponData__bng_weapon_id == -1
+        assert not bad_equipped_weapon._manifest_data
+
+    def test_successful_equipped_weapon_define_rpm_data(self):
+        expected_rpm_data = {
+            "slot_type": "POWER",
+            "main_stat": "15rpm"
+        }
+        
+        self.equipped_weapon.define_data()
+        assert expected_rpm_data == self.equipped_weapon.data
+
+    def test_successful_equipped_weapon_define_charged_weapon_data(self):
+        fusion_rifle = WeaponData(self.conn, 2715240478)
+        fusion_rifle.define_data()
+        
+        equipped_fr = EquippedWeaponData(self.conn, fusion_rifle, 10101010101)
+        equipped_fr.define_data()
+        
+        expected_fr_data = {
+            "slot_type": "KINETIC",
+            "main_stat": "500ms"
+        }
+        
+        assert expected_fr_data == equipped_fr.data
+
+    def test_successful_equipped_weapon_define_sword_data(self):
+        sword = WeaponData(self.conn, 243425374)
+        sword.define_data()
+        
+        squipped_sword = EquippedWeaponData(self.conn, sword, 10101010101)
+        squipped_sword.define_data()
+        
+        exepected_sword_data = {
+            "slot_type": "POWER",
+            "main_stat": "40 swing speed"
+        }
+        
+        assert exepected_sword_data == squipped_sword.data
+
+class EquippedArmorTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.armor_to_equip = ArmorData(self.conn, 1362342075)
+        self.armor_to_equip.define_data()
+
+        self.equipped_armor = EquippedArmorData(self.conn, self.armor_to_equip, 10101010101)
+
+    def test_successful_equipped_armor_init(self):
+        expected_id = 1362342075
+        actual_id = self.equipped_armor._EquippedArmorData__bng_armor_id
+
+        assert expected_id == actual_id
+        assert self.equipped_armor._manifest_data
+
+    def test_unsuccessful_equipped_armor_init(self):
+        bad_id = 1234567890
+        bad_armor = ArmorData(self.conn, bad_id)
+        bad_equipped_armor = EquippedArmorData(self.conn, bad_armor, 10101010101)
+
+        assert bad_equipped_armor._EquippedArmorData__bng_armor_id == -1
+        assert not bad_equipped_armor._manifest_data
+
+    def test_successful_equipped_armor_define_data(self):
+        self.equipped_armor.define_data()
+
+        assert self.equipped_armor.data == {"slot_type": "HELMET"}
+        
