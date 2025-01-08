@@ -265,8 +265,12 @@ class EquippedArmorData(BungieData):
         super().__init__(connection)
         self.__armor = armor_data
         self.__bng_character_id = bng_character_id
-        self.__bng_armor_id = self.__armor.data["bng_armor_id"]
-        self.__manifest_data = MANIFEST.all_data["DestinyInventoryItemDefinition"][self.__bng_armor_id]
+        try:
+            self.__bng_armor_id = self.__armor.data["bng_armor_id"]
+            self._manifest_data = MANIFEST.all_data["DestinyInventoryItemDefinition"][self.__bng_armor_id]
+        except KeyError:
+            self.__bng_armor_id = -1
+            self._manifest_data = dict()
         self.__data: dict = dict()
 
     def __eq__(self, value: object) -> bool:
@@ -276,7 +280,7 @@ class EquippedArmorData(BungieData):
             return False
 
     def define_data(self):
-        self.__data["slot_type"] = ARMOR_SLOT_TYPE(self.__manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+        self.__data["slot_type"] = ARMOR_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
 
     @property
     def data(self) -> dict:
@@ -501,37 +505,36 @@ class DataFactory:
         armor.define_data()
         return armor
 
+# def main():
+#     load_dotenv()
 
-def main():
-    load_dotenv()
+#     bng_conn = BungieConnector(os.getenv("X_API_KEY"))
+#     mem_id = 4611686018441248186
+#     mem_type = 1
 
-    bng_conn = BungieConnector(os.getenv("X_API_KEY"))
-    mem_id = 4611686018441248186
-    mem_type = 1
-
-    player = PlayerData(bng_conn, mem_id, mem_type)
-    player.define_data()
-    for k, v in player.data.items():
-        print(f"{k}: {v}")
+#     player = PlayerData(bng_conn, mem_id, mem_type)
+#     player.define_data()
+#     for k, v in player.data.items():
+#         print(f"{k}: {v}")
     
-    player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
-    player_character.define_data()
-    print()
-    for k, v in player_character.data.items():
-        print(f"{k}: {v}")
+#     player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
+#     player_character.define_data()
+#     print()
+#     for k, v in player_character.data.items():
+#         print(f"{k}: {v}")
 
-    riptide_id = player_character.equipment["weapons"][0]
-    riptide = WeaponData(bng_conn, riptide_id)
-    riptide.define_data()
-    print()
-    for k, v in riptide.data.items():
-        print(f"{k}: {v}")
+#     riptide_id = player_character.equipment["weapons"][0]
+#     riptide = WeaponData(bng_conn, riptide_id)
+#     riptide.define_data()
+#     print()
+#     for k, v in riptide.data.items():
+#         print(f"{k}: {v}")
 
-    equipped_riptide = EquippedWeaponData(bng_conn, riptide, mem_id)
-    equipped_riptide.define_data()
-    print()
-    for k, v in equipped_riptide.data.items():
-        print(f"{k}: {v}")
+#     equipped_riptide = EquippedWeaponData(bng_conn, riptide, mem_id)
+#     equipped_riptide.define_data()
+#     print()
+#     for k, v in equipped_riptide.data.items():
+#         print(f"{k}: {v}")
 
     # helmet_id = player_character.equipment["equipped_armor"][0]
     # helmet = ArmorData(bng_conn, helmet_id)
@@ -570,5 +573,5 @@ def main():
     #     for k, v in stat.data.items():
     #         print(f"{k}: {v}")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

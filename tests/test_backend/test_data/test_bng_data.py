@@ -428,3 +428,32 @@ class EquippedWeaponTestCase(unittest.TestCase):
         }
         
         assert exepected_sword_data == squipped_sword.data
+
+class EquippedArmorTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.armor_to_equip = ArmorData(self.conn, 1362342075)
+        self.armor_to_equip.define_data()
+
+        self.equipped_armor = EquippedArmorData(self.conn, self.armor_to_equip, 10101010101)
+
+    def test_successful_equipped_armor_init(self):
+        expected_id = 1362342075
+        actual_id = self.equipped_armor._EquippedArmorData__bng_armor_id
+
+        assert expected_id == actual_id
+        assert self.equipped_armor._manifest_data
+
+    def test_unsuccessful_equipped_armor_init(self):
+        bad_id = 1234567890
+        bad_armor = ArmorData(self.conn, bad_id)
+        bad_equipped_armor = EquippedArmorData(self.conn, bad_armor, 10101010101)
+
+        assert bad_equipped_armor._EquippedArmorData__bng_armor_id == -1
+        assert not bad_equipped_armor._manifest_data
+
+    def test_successful_equipped_armor_define_data(self):
+        self.equipped_armor.define_data()
+
+        assert self.equipped_armor.data == {"slot_type": "HELMET"}
+        
