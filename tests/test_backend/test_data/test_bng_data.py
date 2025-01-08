@@ -1,6 +1,5 @@
-import pytest
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from backend.data.bng_data import (
     PlayerData,
@@ -100,12 +99,8 @@ class PlayerDataTestCase(unittest.TestCase):
         
         self.conn.get_url_request.side_effect = [bad_member_response_data, bad_profile_response_data]
         self.player.define_data()
-        expected_data = {
-            "date_created": "2007-07-07",
-            "date_last_played": "2017-07-07"
-        }
 
-        assert self.player.data == expected_data
+        assert self.player.data == {}
 
 class CharacterDataTestCase(unittest.TestCase):
     def setUp(self):
@@ -456,4 +451,315 @@ class EquippedArmorTestCase(unittest.TestCase):
         self.equipped_armor.define_data()
 
         assert self.equipped_armor.data == {"slot_type": "HELMET"}
+
+class ActivityDataTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.rumble_id = 2259621230
+        self.rumble_activity = ActivityData(self.conn, self.rumble_id)
+    
+    def test_successful_activity_data_init(self):
+        assert self.rumble_activity._manifest_data
+    
+    def test_unsuccessful_activity_data_init(self):
+        bad_id = 123456789
+        bad_activity = ActivityData(self.conn, bad_id)
+
+        assert not bad_activity._manifest_data
+
+    def test_successful_activity_data_def(self):
+        self.rumble_activity.define_data()
+        expected_activity_data = {
+            "bng_activity_id": 2259621230,
+            "activity_name": "Rumble",
+            "max_fireteam_size": 6,
+            "type": "The Crucible",
+            "modifiers": "Rumble Rules, Notswap, Increased Crucible Rank, Double Crucible Drops, Matchmaking, Longer Respawns"
+        }
+
+        assert self.rumble_activity.data == expected_activity_data
         
+        modifiers = self.rumble_activity.data["modifiers"]
+        assert not modifiers.endswith(", ")
+    
+    def test_unsuccessful_activity_data_def(self):
+        bad_id = 123456789
+        bad_activity = ActivityData(self.conn, bad_id)
+        bad_activity.define_data()
+
+        assert bad_activity.data == {}
+    
+    def test_overflowing_activity_data_modifiers(self):
+        gm_id = 967120713
+        gm_activity = ActivityData(self.conn, gm_id)
+        gm_activity.define_data()
+
+        expected_gm_data = {
+            "bng_activity_id": 967120713,
+            "activity_name": "Nightfall Grandmaster: Birthplace of the Vile",
+            "max_fireteam_size": 3,
+            "type": "Nightfall",
+            "modifiers": "Shielded Foes, Shielded Foes, Overcharged Weapons, Champion Foes, Champion Foes, Void Threat, Overch..."
+        }
+
+        assert gm_activity.data == expected_gm_data
+
+        modifiers = gm_activity.data["modifiers"] 
+        assert modifiers.endswith("...")
+
+class ActivityInstanceDataTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = MagicMock()
+        self.mock_instance_id = 123456789
+
+    def test_successful_post_game_carnage_report(self):
+        mock_pgcr_response = {
+            "period": "2007-07-07T07:07:07Z",
+            "startingPhaseIndex": 0,
+            "activityWasStartedFromBeginning": False,
+            "activityDetails": {},
+            "entries": [],
+            "teams": []
+        }
+        self.conn.get_url_request.return_value = mock_pgcr_response
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+        
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == mock_pgcr_response
+
+    def test_unsuccessful_post_game_carnage_report(self):
+        mock_pgcr_response = {}
+        self.conn.get_url_request.return_value = mock_pgcr_response
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+        
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == {}
+
+    def test_successful_activity_instance_define_data_multiple(self):
+        mock_pgcr_response = {
+            "activityDetails": {
+                "directorActivityHash": 1029384756
+            },
+            "entries": [
+                {
+                    "characterId": "10101010101",
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 111222333
+                            },
+                            {
+                                "referenceId": 222333444
+                            }
+                        ]
+                    }
+                },
+                {
+                    "characterId": "20202020202",
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 555666777
+                            },
+                            {
+                                "referenceId": 777888999
+                            }
+                        ]
+                    }
+                },
+                {
+                    "characterId": "30303030303",
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 111222333
+                            }
+                        ]
+                    }
+                },
+                {
+                    "characterId": "40404040404",
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 555666777
+                            },
+                            {
+                                "referenceId": 333444555
+                            },
+                            {
+                                "referenceId": 222333444
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        self.conn.get_url_request.return_value = mock_pgcr_response
+
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == mock_pgcr_response
+        
+        activity_instance.define_data()
+        assert activity_instance._ActivityInstanceData__activity_id == 1029384756
+
+        expected_instance_data = {
+            10101010101: [111222333, 222333444],
+            20202020202: [555666777, 777888999],
+            30303030303: [111222333],
+            40404040404: [555666777, 333444555, 222333444]
+        }
+        assert activity_instance.participants_data == expected_instance_data
+    
+    def test_successful_activity_instance_define_data_single(self):
+        mock_pgcr_response = {
+            "activityDetails": {
+                "directorActivityHash": 1029384756
+            },
+            "entries": [
+                {
+                    "characterId": "10101010101",
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 111222333
+                            },
+                            {
+                                "referenceId": 222333444
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        self.conn.get_url_request.return_value = mock_pgcr_response
+
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == mock_pgcr_response
+        
+        activity_instance.define_data()
+        assert activity_instance._ActivityInstanceData__activity_id == 1029384756
+
+        expected_instance_data = {
+            10101010101: [111222333, 222333444]
+        }
+        assert activity_instance.participants_data == expected_instance_data
+
+    def test_activity_instance_define_data_without_weapons(self):
+        mock_pgcr_response = {
+            "activityDetails": {
+                "directorActivityHash": 1029384756
+            },
+            "entries": [
+                {
+                    "characterId": "10101010101",
+                    "extended": {}
+                }
+            ]
+        }
+        self.conn.get_url_request.return_value = mock_pgcr_response
+
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == mock_pgcr_response
+        
+        activity_instance.define_data()
+        assert activity_instance._ActivityInstanceData__activity_id == 1029384756
+
+        assert activity_instance.participants_data == {}
+    
+    def test_activity_instance_define_data_bad_character_id(self):
+        mock_pgcr_response = {
+            "activityDetails": {
+                "directorActivityHash": 1029384756
+            },
+            "entries": [
+                {
+                    "characterId": "badId", # bad ID, should raise an error that skips this entry
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 111222333
+                            },
+                            {
+                                "referenceId": 222333444
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        self.conn.get_url_request.return_value = mock_pgcr_response
+
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == mock_pgcr_response
+        
+        activity_instance.define_data()
+        assert activity_instance._ActivityInstanceData__activity_id == 1029384756
+
+        assert activity_instance.participants_data == {}
+
+    def test_activity_instance_define_data_bad_character_id_with_partial_data(self):
+        mock_pgcr_response = {
+            "activityDetails": {
+                "directorActivityHash": 1029384756
+            },
+            "entries": [
+                {
+                    "characterId": "badId", # bad ID, should raise an error that skips this entry
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 111222333
+                            }
+                        ]
+                    }
+                },
+                {
+                    "characterId": "202020202",
+                    "extended": {
+                        "weapons": [
+                            {
+                                "referenceId": 777888999
+                            },
+                            {
+                                "referenceId": 444555666
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        self.conn.get_url_request.return_value = mock_pgcr_response
+
+        pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
+        
+        activity_instance = ActivityInstanceData(self.conn, self.mock_instance_id)
+
+        self.conn.get_url_request.assert_called_once_with(pgcr_path)
+        assert activity_instance._pgcr == mock_pgcr_response
+        
+        activity_instance.define_data()
+        
+        expected_instance_data = {
+            202020202: [777888999, 444555666]
+        }
+        assert activity_instance._ActivityInstanceData__activity_id == 1029384756
+        assert activity_instance.participants_data == expected_instance_data
