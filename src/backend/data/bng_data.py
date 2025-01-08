@@ -75,7 +75,7 @@ class PlayerData(BungieData):
                 self.__data["platform"] = PLATFORM(self._type).name
                 self.__data["character_ids"] = destiny_prof_data["profile"]["data"]["characterIds"]
             except KeyError:
-                pass
+                self.__data.clear()
 
     @property
     def data(self) -> dict:
@@ -113,7 +113,8 @@ class CharacterData(PlayerData):
                     self.__equipment["weapons"] = []
                     self.__equipment["armor"] = []
             except KeyError:
-                pass
+                self.__data.clear()
+                self.__equipment.clear()
 
     def get_activity_hist_instances(self, mode: int, count: int, path: str="") -> list[int]:
         if not path:
@@ -197,13 +198,13 @@ class WeaponData(BungieData):
         return self.__data
 
 class EquippedWeaponData(BungieData):
-    def __init__(self, connection: BungieConnector, weapon: WeaponData, bng_character_id: int) -> None:
+    def __init__(self, connection: BungieConnector, weapon: WeaponData, bng_character_id: int, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         super().__init__(connection)
         self.__weapon = weapon
         self.__bng_character_id = bng_character_id
         try:
             self.__bng_weapon_id = weapon.data["bng_weapon_id"]
-            self._manifest_data = MANIFEST.all_data["DestinyInventoryItemDefinition"][self.__bng_weapon_id]
+            self._manifest_data = manifest.all_data["DestinyInventoryItemDefinition"][self.__bng_weapon_id]
         except KeyError:
             self.__bng_weapon_id = -1
             self._manifest_data = dict()
@@ -217,13 +218,18 @@ class EquippedWeaponData(BungieData):
     
     def define_data(self):
         if self._manifest_data:
-            self.__data["slot_type"] = WEAPON_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
-            if self.__weapon.data["weapon_type"] == "FUSION_RIFLE" or self.__weapon.data["weapon_type"] == "LINEAR_FUSION_RIFLE":
-                self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2961396640"]["value"]}ms"
-            elif self.__weapon.data["weapon_type"] == "SWORD":
-                self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2837207746"]["value"]} swing speed"
-            else:
-                self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["4284893193"]["value"]}rpm"
+            try:
+                self.__data["slot_type"] = WEAPON_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+                if self.__weapon.data["weapon_type"] == "FUSION_RIFLE" or self.__weapon.data["weapon_type"] == "LINEAR_FUSION_RIFLE":
+                    self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2961396640"]["value"]}ms"
+                elif self.__weapon.data["weapon_type"] == "SWORD":
+                    self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2837207746"]["value"]} swing speed"
+                else:
+                    self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["4284893193"]["value"]}rpm"
+            except KeyError:
+                pass
+        else:
+            self.__data.clear()
 
     @property
     def data(self) -> dict:
@@ -261,13 +267,13 @@ class ArmorData(BungieData):
         return self.__data
 
 class EquippedArmorData(BungieData):
-    def __init__(self, connection: BungieConnector, armor_data: ArmorData, bng_character_id) -> None:
+    def __init__(self, connection: BungieConnector, armor_data: ArmorData, bng_character_id, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         super().__init__(connection)
         self.__armor = armor_data
         self.__bng_character_id = bng_character_id
         try:
             self.__bng_armor_id = self.__armor.data["bng_armor_id"]
-            self._manifest_data = MANIFEST.all_data["DestinyInventoryItemDefinition"][self.__bng_armor_id]
+            self._manifest_data = manifest.all_data["DestinyInventoryItemDefinition"][self.__bng_armor_id]
         except KeyError:
             self.__bng_armor_id = -1
             self._manifest_data = dict()
@@ -280,18 +286,27 @@ class EquippedArmorData(BungieData):
             return False
 
     def define_data(self):
-        self.__data["slot_type"] = ARMOR_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+        if self._manifest_data:
+            try:
+                self.__data["slot_type"] = ARMOR_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+            except KeyError:
+                pass
+        else:
+            self.__data.clear()
 
     @property
     def data(self) -> dict:
         return self.__data
 
 class ActivityData(BungieData):
-    def __init__(self, connection: BungieConnector, activity_id) -> None:
+    def __init__(self, connection: BungieConnector, activity_id, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         super().__init__(connection)
         self.__data: dict = dict()
         self.__activity_id = activity_id
-        self.__manifest_data = MANIFEST.all_data["DestinyActivityDefinition"][self.__activity_id]
+        try:
+            self._manifest_data = manifest.all_data["DestinyActivityDefinition"][self.__activity_id]
+        except KeyError:
+            self._manifest_data = dict()
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, ActivityData):
@@ -300,30 +315,36 @@ class ActivityData(BungieData):
             return False
 
     def define_data(self):
-        self.__data["bng_activity_id"] = self.__activity_id
-        self.__data["activity_name"] = self.__manifest_data["displayProperties"]["name"]
-        self.__data["max_fireteam_size"] = self.__manifest_data["matchmaking"]["maxPlayers"]
-        
-        type_hash = self.__manifest_data["activityTypeHash"]
-        type_data = MANIFEST.all_data["DestinyActivityTypeDefinition"][type_hash]
-        self.__data["type"] = type_data["displayProperties"]["name"]
-        
-        modifier_manifest = MANIFEST.all_data["DestinyActivityModifierDefinition"]
-        modifiers = ""
-        for modifier_hash in self.__manifest_data["modifiers"]:
+        if self._manifest_data:
             try:
-                curr_mod = modifier_manifest[modifier_hash["activityModifierHash"]]["displayProperties"]["name"]
-                if curr_mod:
-                    modifiers += f"{curr_mod}, "
-            except KeyError:
-                continue
-        else:
-            modifiers = modifiers[:-2]
-        
-        if len(modifiers) > 100:
-            modifiers = modifiers[:100] + "..."
+                self.__data["bng_activity_id"] = self.__activity_id
+                self.__data["activity_name"] = self._manifest_data["displayProperties"]["name"]
+                self.__data["max_fireteam_size"] = self._manifest_data["matchmaking"]["maxPlayers"]
+                
+                type_hash = self._manifest_data["activityTypeHash"]
+                type_data = MANIFEST.all_data["DestinyActivityTypeDefinition"][type_hash]
+                self.__data["type"] = type_data["displayProperties"]["name"]
+                
+                modifier_manifest = MANIFEST.all_data["DestinyActivityModifierDefinition"]
+                modifiers = ""
+                for modifier_hash in self._manifest_data["modifiers"]:
+                    try:
+                        curr_mod = modifier_manifest[modifier_hash["activityModifierHash"]]["displayProperties"]["name"]
+                        if curr_mod:
+                            modifiers += f"{curr_mod}, "
+                    except KeyError:
+                        continue
+                else:
+                    modifiers = modifiers[:-2]
+                
+                if len(modifiers) > 100:
+                    modifiers = modifiers[:100] + "..."
 
-        self.__data["modifiers"] = modifiers
+                self.__data["modifiers"] = modifiers
+            except KeyError:
+                pass
+        else:
+            self.__data.clear()
     
     @property
     def data(self) -> dict:
@@ -505,36 +526,36 @@ class DataFactory:
         armor.define_data()
         return armor
 
-# def main():
-#     load_dotenv()
+def main():
+    load_dotenv()
 
-#     bng_conn = BungieConnector(os.getenv("X_API_KEY"))
-#     mem_id = 4611686018441248186
-#     mem_type = 1
+    bng_conn = BungieConnector(os.getenv("X_API_KEY"))
+    mem_id = 4611686018441248186
+    mem_type = 1
 
-#     player = PlayerData(bng_conn, mem_id, mem_type)
-#     player.define_data()
-#     for k, v in player.data.items():
-#         print(f"{k}: {v}")
+    # player = PlayerData(bng_conn, mem_id, mem_type)
+    # player.define_data()
+    # for k, v in player.data.items():
+    #     print(f"{k}: {v}")
     
-#     player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
-#     player_character.define_data()
-#     print()
-#     for k, v in player_character.data.items():
-#         print(f"{k}: {v}")
+    # player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
+    # player_character.define_data()
+    # print()
+    # for k, v in player_character.data.items():
+    #     print(f"{k}: {v}")
 
-#     riptide_id = player_character.equipment["weapons"][0]
-#     riptide = WeaponData(bng_conn, riptide_id)
-#     riptide.define_data()
-#     print()
-#     for k, v in riptide.data.items():
-#         print(f"{k}: {v}")
+    # riptide_id = player_character.equipment["weapons"][0]
+    # riptide = WeaponData(bng_conn, riptide_id)
+    # riptide.define_data()
+    # print()
+    # for k, v in riptide.data.items():
+    #     print(f"{k}: {v}")
 
-#     equipped_riptide = EquippedWeaponData(bng_conn, riptide, mem_id)
-#     equipped_riptide.define_data()
-#     print()
-#     for k, v in equipped_riptide.data.items():
-#         print(f"{k}: {v}")
+    # equipped_riptide = EquippedWeaponData(bng_conn, riptide, mem_id)
+    # equipped_riptide.define_data()
+    # print()
+    # for k, v in equipped_riptide.data.items():
+    #     print(f"{k}: {v}")
 
     # helmet_id = player_character.equipment["equipped_armor"][0]
     # helmet = ArmorData(bng_conn, helmet_id)
@@ -547,12 +568,12 @@ class DataFactory:
     # # for k, v in rumble_data.items(): # type: ignore
     # #     print(f"{k}: {v}:")
         
-    # rumble_id = 2259621230
-    # rumble = ActivityData(bng_conn, rumble_id)
-    # rumble.define_data()
-    # print()
-    # for k, v in rumble.data.items():
-    #     print(f"{k}: {v}")
+    rumble_id = 2259621230
+    rumble = ActivityData(bng_conn, rumble_id)
+    rumble.define_data()
+    print()
+    for k, v in rumble.data.items():
+        print(f"{k}: {v}")
     
     # rumble_instance_id = int(rumble_data[0])  # type: ignore
     # rumble_instance = ActivityInstanceData(bng_conn, rumble_instance_id)
@@ -573,5 +594,5 @@ class DataFactory:
     #     for k, v in stat.data.items():
     #         print(f"{k}: {v}")
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
