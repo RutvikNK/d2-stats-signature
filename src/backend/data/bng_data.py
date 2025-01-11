@@ -386,10 +386,10 @@ class ActivityInstanceData(BungieData):
                 except KeyError:
                     continue
             
-    def create_stats(self) -> None:
+    def create_stats(self, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         for character, weapons in self._character_pgdata.items():
             for weapon_id in weapons:
-                new_stats = ActivityStatsData(self.bng_conn, self._instance_id, weapon_id, character, self.__activity_id)
+                new_stats = ActivityStatsData(self.bng_conn, self._instance_id, weapon_id, character, self.__activity_id, manifest)
                 new_stats.define_data()
                 self.__instance_stats.append(new_stats)
 
