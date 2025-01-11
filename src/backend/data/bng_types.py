@@ -74,8 +74,8 @@ class WEAPON_TYPE(Enum):
   LINEAR_FUSION_RIFLE = 16
   SWORD = 17
 
-def main():
-  print(ACTIVITY_TYPE(70).value)
+# def main():
+#   print(ACTIVITY_TYPE(70).value)
 
-if __name__ == "__main__":
-  main()
+# if __name__ == "__main__":
+#   main()
