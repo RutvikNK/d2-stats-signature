@@ -405,7 +405,7 @@ class ActivityInstanceData(BungieData):
         return self._instance_id
                         
 class ActivityStatsData(BungieData):
-    def __init__(self, connection: BungieConnector, instance_id: int, weapon_id: int, char_id: int, activity_id: int) -> None:
+    def __init__(self, connection: BungieConnector, instance_id: int, weapon_id: int, char_id: int, activity_id: int, manifest: manifest.DestinyManifest=MANIFEST) -> None:
         super().__init__(connection)
         self.__data: dict = dict()
         self.__og_data: dict = dict()
@@ -414,7 +414,8 @@ class ActivityStatsData(BungieData):
         self.__character_id = char_id
         self.__instance_id = instance_id
         self.__activity_id = activity_id
-        self._pgcr_path = f"{self.root}//Destiny2/Stats/PostGameCarnageReport/{self.__instance_id}/"
+        self._pgcr_path = f"{self.root}/Destiny2/Stats/PostGameCarnageReport/{self.__instance_id}/"
+        self._manifest = manifest
 
     def define_data(self):
         pgcr = self.get_data(self._pgcr_path)
@@ -423,37 +424,45 @@ class ActivityStatsData(BungieData):
             perf_report = self.__get_participating_character(pgcr)
 
             if perf_report:
-                weapons_manifest = MANIFEST.all_data["DestinyInventoryItemDefinition"]
-                activities_manifest = MANIFEST.all_data["DestinyActivityDefinition"]
-                classes_manifesst = MANIFEST.all_data["DestinyClassDefinition"]
-
-                self.__data["instance_id"] = self.__instance_id
-                
-                self.__og_data["bng_activity_id"] = self.__activity_id
-                self.__og_data["bng_character_id"] = self.__character_id
-                self.__og_data["bng_weapon_id"] = self.__weapon_id
-
-                self.__participant["destiny_id"] = perf_report["player"]["destinyUserInfo"]["membershipId"]
-                self.__participant["member_type"] = perf_report["player"]["destinyUserInfo"]["membershipType"]
-
-                weapon_data = self.__get_weapon(perf_report)
-
-                if weapon_data:
-                    self.__data["kills"] = weapon_data["values"]["uniqueWeaponKills"]["basic"]["value"]
-                    self.__data["precision_kills"] = weapon_data["values"]["uniqueWeaponPrecisionKills"]["basic"]["value"]
-                    
-                    try:
-                        self.__data["precision_kills_percent"] =  round((self.__data["precision_kills"] / self.__data["kills"]) * 100, 2)
-                    except ZeroDivisionError:
-                        self.__data["precision_kills_percent"] = 0.0
-
-                self.__data["weapon_name"] = weapons_manifest[self.__weapon_id]["displayProperties"]["name"]
                 try:
+                    weapons_manifest = self._manifest.all_data["DestinyInventoryItemDefinition"]
+                    activities_manifest = self._manifest.all_data["DestinyActivityDefinition"]
+                    classes_manifesst = self._manifest.all_data["DestinyClassDefinition"]
+
+                    self.__data["instance_id"] = self.__instance_id
+                    
+                    self.__og_data["bng_activity_id"] = self.__activity_id
+                    self.__og_data["bng_character_id"] = self.__character_id
+                    self.__og_data["bng_weapon_id"] = self.__weapon_id
+
+                    self.__participant["destiny_id"] = perf_report["player"]["destinyUserInfo"]["membershipId"]
+                    self.__participant["member_type"] = perf_report["player"]["destinyUserInfo"]["membershipType"]
+
+                    weapon_data = self.__get_weapon(perf_report)
+
+                    if weapon_data:
+                        self.__data["kills"] = weapon_data["values"]["uniqueWeaponKills"]["basic"]["value"]
+                        self.__data["precision_kills"] = weapon_data["values"]["uniqueWeaponPrecisionKills"]["basic"]["value"]
+                        
+                        try:
+                            self.__data["precision_kills_percent"] =  round((self.__data["precision_kills"] / self.__data["kills"]) * 100, 2)
+                        except ZeroDivisionError:
+                            self.__data["precision_kills_percent"] = 0.0
+                    else:
+                        raise KeyError
+
+                    self.__data["weapon_name"] = weapons_manifest[self.__weapon_id]["displayProperties"]["name"]
                     self.__data["activity_name"] = activities_manifest[pgcr["activityDetails"]["directorActivityHash"]]["displayProperties"]["name"]
                     self.__data["character_class"] = classes_manifesst[perf_report["player"]["classHash"]]["displayProperties"]["name"]
+                    
+                    return
                 except KeyError:
-                    self.__data.clear()
+                    pass
                  
+        self.__data.clear()
+        self.__og_data.clear()
+        self.__participant.clear()
+
     def __get_participating_character(self, pgcr: dict) -> Optional[dict]:
         for player in pgcr["entries"]:
             if int(player["characterId"]) == self.__character_id:
@@ -540,14 +549,14 @@ class DataFactory:
 
 #     player = PlayerData(bng_conn, mem_id, mem_type)
 #     player.define_data()
-#     for k, v in player.data.items():
-#         print(f"{k}: {v}")
+#     # for k, v in player.data.items():
+#     #     print(f"{k}: {v}")
     
 #     player_character = CharacterData(bng_conn, mem_id, mem_type, int(player.data["character_ids"][0]), 1)
 #     player_character.define_data()
-#     print()
-#     for k, v in player_character.data.items():
-#         print(f"{k}: {v}")
+#     # print()
+#     # for k, v in player_character.data.items():
+#     #     print(f"{k}: {v}")
 
 #     # riptide_id = player_character.equipment["weapons"][0]
 #     # riptide = WeaponData(bng_conn, riptide_id)
@@ -573,7 +582,7 @@ class DataFactory:
 #     # for k, v in rumble_data.items(): # type: ignore
 #     #     print(f"{k}: {v}:")
         
-#     # rumble_id = 2259621230
+#     rumble_id = 2259621230
 #     # rumble = ActivityData(bng_conn, rumble_id)
 #     # rumble.define_data()
 #     # print()
@@ -583,21 +592,21 @@ class DataFactory:
 #     rumble_instance_id = int(rumble_data[0])  # type: ignore
 #     rumble_instance = ActivityInstanceData(bng_conn, rumble_instance_id)
 #     rumble_instance.define_data()
-#     print()
-#     for k, v in rumble_instance._character_pgdata.items():
-#         print(f"{k}: {v}")
+#     # print()
+#     # for k, v in rumble_instance._character_pgdata.items():
+#     #     print(f"{k}: {v}")
 
-#     # rumble_all_stats = []
-#     # for character, weapons in rumble_instance.participants_data.items():
-#     #     for weapon_id in weapons:
-#     #         new_stats = ActivityStatsData(bng_conn, rumble_instance_id, weapon_id, character, rumble_id)
-#     #         new_stats.define_data()
-#     #         rumble_all_stats.append(new_stats)
+#     rumble_all_stats = []
+#     for character, weapons in rumble_instance.participants_data.items():
+#         for weapon_id in weapons:
+#             new_stats = ActivityStatsData(bng_conn, rumble_instance_id, weapon_id, character, rumble_id)
+#             new_stats.define_data()
+#             rumble_all_stats.append(new_stats)
     
-#     # for stat in rumble_all_stats:
-#     #     print()
-#     #     for k, v in stat.data.items():
-#     #         print(f"{k}: {v}")
+#     for stat in rumble_all_stats:
+#         print()
+#         for k, v in stat.data.items():
+#             print(f"{k}: {v}")
 
 # if __name__ == "__main__":
 #     main()
