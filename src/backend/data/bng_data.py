@@ -303,8 +303,9 @@ class ActivityData(BungieData):
         super().__init__(connection)
         self.__data: dict = dict()
         self.__activity_id = activity_id
+        self.__manifest = manifest
         try:
-            self._manifest_data = manifest.all_data["DestinyActivityDefinition"][self.__activity_id]
+            self._manifest_data = self.__manifest.all_data["DestinyActivityDefinition"][self.__activity_id]
         except KeyError:
             self._manifest_data = dict()
 
@@ -322,10 +323,10 @@ class ActivityData(BungieData):
                 self.__data["max_fireteam_size"] = self._manifest_data["matchmaking"]["maxPlayers"]
                 
                 type_hash = self._manifest_data["activityTypeHash"]
-                type_data = MANIFEST.all_data["DestinyActivityTypeDefinition"][type_hash]
+                type_data = self.__manifest.all_data["DestinyActivityTypeDefinition"][type_hash]
                 self.__data["type"] = type_data["displayProperties"]["name"]
                 
-                modifier_manifest = MANIFEST.all_data["DestinyActivityModifierDefinition"]
+                modifier_manifest = self.__manifest.all_data["DestinyActivityModifierDefinition"]
                 modifiers = ""
                 for modifier_hash in self._manifest_data["modifiers"]:
                     try:
@@ -490,53 +491,54 @@ class ActivityStatsData(BungieData):
         return self.__participant
 
 class DataFactory:
-    bng_conn = BungieConnector("10E792629C2A47E19356B8A79EEFA640") 
+    load_dotenv()
+    bng_conn = BungieConnector(os.getenv("X_API_KEY")) 
 
     @staticmethod
-    def get_player(member_id: int, member_type: int) -> PlayerData:
-        player = PlayerData(DataFactory.bng_conn, member_id, member_type)
+    def get_player(member_id: int, member_type: int, conn: BungieConnector=bng_conn) -> PlayerData:
+        player = PlayerData(conn, member_id, member_type)
         player.define_data()
         return player
     
     @staticmethod
-    def get_character(member_id: int, member_type: int, char_id: int, player_id: int) -> CharacterData:
-        character = CharacterData(DataFactory.bng_conn, member_id, member_type, char_id, player_id)
+    def get_character(member_id: int, member_type: int, char_id: int, player_id: int, conn: BungieConnector=bng_conn) -> CharacterData:
+        character = CharacterData(conn, member_id, member_type, char_id, player_id)
         character.define_data()
         return character
     
     @staticmethod
-    def get_weapon(weapon_id: int) -> WeaponData:
-        weapon = WeaponData(DataFactory.bng_conn, weapon_id)
+    def get_weapon(weapon_id: int, conn: BungieConnector=bng_conn, manifest: manifest.DestinyManifest=MANIFEST) -> WeaponData:
+        weapon = WeaponData(conn, weapon_id, manifest)
         weapon.define_data()
         return weapon
     
     @staticmethod
-    def get_armor(armor_id: int) -> ArmorData:
-        armor = ArmorData(DataFactory.bng_conn, armor_id)
+    def get_armor(armor_id: int, conn: BungieConnector=bng_conn, manifest: manifest.DestinyManifest=MANIFEST) -> ArmorData:
+        armor = ArmorData(conn, armor_id, manifest)
         armor.define_data()
         return armor
     
     @staticmethod
-    def get_activity(activity_id: int) -> ActivityData:
-        activity = ActivityData(DataFactory.bng_conn, activity_id)
+    def get_activity(activity_id: int, conn: BungieConnector=bng_conn, manifest: manifest.DestinyManifest=MANIFEST) -> ActivityData:
+        activity = ActivityData(conn, activity_id, manifest)
         activity.define_data()
         return activity
     
     @staticmethod
-    def get_activity_instance(instance_id: int) -> ActivityInstanceData:
-        instance = ActivityInstanceData(DataFactory.bng_conn, instance_id)
+    def get_activity_instance(instance_id: int, conn: BungieConnector=bng_conn) -> ActivityInstanceData:
+        instance = ActivityInstanceData(conn, instance_id)
         instance.define_data()
         return instance
     
     @staticmethod
-    def get_equipped_weapon(weapon_data: WeaponData, bng_character_id: int) -> EquippedWeaponData:
-        weapon = EquippedWeaponData(DataFactory.bng_conn, weapon_data, bng_character_id)
+    def get_equipped_weapon(weapon_data: WeaponData, bng_character_id: int, conn: BungieConnector=bng_conn, manifest: manifest.DestinyManifest=MANIFEST) -> EquippedWeaponData:
+        weapon = EquippedWeaponData(conn, weapon_data, bng_character_id, manifest)
         weapon.define_data()
         return weapon
     
     @staticmethod
-    def get_equipped_armor(armor_data: ArmorData, bng_character_id: int) -> EquippedArmorData:
-        armor = EquippedArmorData(DataFactory.bng_conn, armor_data, bng_character_id)
+    def get_equipped_armor(armor_data: ArmorData, bng_character_id: int, conn: BungieConnector=bng_conn, manifest: manifest.DestinyManifest=MANIFEST) -> EquippedArmorData:
+        armor = EquippedArmorData(conn, armor_data, bng_character_id, manifest)
         armor.define_data()
         return armor
 
