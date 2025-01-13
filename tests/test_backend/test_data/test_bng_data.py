@@ -297,9 +297,33 @@ class CharacterDataTestCase(unittest.TestCase):
 class WeaponDataTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.conn = MagicMock()
+
+        self.manifest_data = MagicMock()
         self.manifest = DestinyManifest()
-        self.good_weapon_id = 1363886209
-        self.bad_weapon_id = 1234567890
+        self.manifest.all_data = self.manifest_data
+
+        self.mock_manifest = {
+            "DestinyInventoryItemDefinition": {
+                199: {
+                    "itemTypeDisplayName": "Auto Rifle",
+                    "displayProperties": {
+                        "name": "Weapon Name"
+                    },
+                    "equippingBlock": {
+                        "ammoType": 2,
+                        "equipmentSlotTypeHash": 1498876634
+                    },
+                    "damageTypes": [
+                        7
+                    ],
+                    "itemTypeAndTierDisplayName": "Legendary Auto Rifle"
+                }
+            }
+        }
+        self.manifest_data.__getitem__.side_effect = self.mock_manifest.__getitem__
+
+        self.good_weapon_id = 199
+        self.bad_weapon_id = 801
 
     def test_successful_weapon_manifest_init(self):
         weapon = WeaponData(self.conn, self.good_weapon_id, self.manifest)
@@ -314,13 +338,13 @@ class WeaponDataTestCase(unittest.TestCase):
         weapon.define_data()
 
         expected_weapon_data = {
-            "bng_weapon_id": 1363886209,
-            "weapon_type": "ROCKET_LAUNCHER",
-            "weapon_name": "Gjallarhorn",
-            "ammo_type": "HEAVY",
-            "slot": "POWER",
-            "damage_type": "SOLAR",
-            "rarity": "EXOTIC"
+            "bng_weapon_id": 199,
+            "weapon_type": "AUTO_RIFLE",
+            "weapon_name": "Weapon Name",
+            "ammo_type": "SPECIAL",
+            "slot": "KINETIC",
+            "damage_type": "STRAND",
+            "rarity": "LEGENDARY"
         }
         assert weapon.data == expected_weapon_data
 
@@ -333,9 +357,28 @@ class WeaponDataTestCase(unittest.TestCase):
 class ArmorDataTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.conn = MagicMock()
+        
+        self.manifest_data = MagicMock()
         self.manifest = DestinyManifest()
-        self.good_armor_id = 1362342075
-        self.bad_armor_id = 1234567890
+        self.manifest.all_data = self.manifest_data
+
+        self.mock_manifest = {
+            "DestinyInventoryItemDefinition": {
+                883: {
+                    "displayProperties": {
+                        "name": "Helmet Name"
+                    },
+                    "equippingBlock": {
+                        "equipmentSlotTypeHash": 3448274439
+                    },
+                    "itemTypeAndTierDisplayName": "Exotic Helmet"
+                }
+            }
+        }
+        self.manifest_data.__getitem__.side_effect = self.mock_manifest.__getitem__
+
+        self.good_armor_id = 883
+        self.bad_armor_id = 144
     
     def test_successful_armor_manifest_init(self):
         armor = ArmorData(self.conn, self.good_armor_id, self.manifest)
@@ -350,8 +393,8 @@ class ArmorDataTestCase(unittest.TestCase):
         armor.define_data()
 
         expected_armor_data = {
-            "bng_armor_id": 1362342075,
-            "armor_name": "Helm of Saint-14",
+            "bng_armor_id": 883,
+            "armor_name": "Helmet Name",
             "slot": "HELMET",
             "rarity": "EXOTIC"
         }
@@ -366,7 +409,6 @@ class ArmorDataTestCase(unittest.TestCase):
 class EquippedWeaponTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.conn = MagicMock()
-        self.manifest = DestinyManifest()
         self.weapon_to_equip = WeaponData(self.conn, 1363886209)
         self.weapon_to_equip.define_data()
 
