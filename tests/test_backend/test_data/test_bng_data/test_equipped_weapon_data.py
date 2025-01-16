@@ -91,6 +91,35 @@ class EquippedWeaponTestCase(unittest.TestCase):
 
         self.equipped_weapon = EquippedWeaponData(self.conn, self.weapon_to_equip, 10101010101, self.manifest)
 
+    def test_equipped_weapon_eq(self):
+        weapon1 = MagicMock()
+        mock_weapon_data_1 = {
+            "bng_weapon_id": 322
+        }
+        weapon1.data.__getitem__.side_effect = mock_weapon_data_1.__getitem__
+
+        ew1 = EquippedWeaponData(self.conn, weapon1, 999)
+        ew2 = EquippedWeaponData(self.conn, weapon1, 999)
+        
+        assert ew1 == ew2
+
+        weapon2 = MagicMock()
+        mock_weapon_data_2 = {
+            "bng_weapon_id": 124
+        }
+        weapon2.data.__getitem__.side_effect = mock_weapon_data_2.__getitem__
+        ew3 = EquippedWeaponData(self.conn, weapon2, 999)
+        assert ew1 != ew3
+
+        ew4 = EquippedWeaponData(self.conn, weapon1, 231)
+        assert ew1 != ew4
+
+        ew5 = EquippedWeaponData(self.conn, weapon2, 231)
+        assert ew1 != ew5
+
+        not_ew = "not an equipped weapon"
+        assert ew1 != not_ew
+
     def test_successful_equipped_weapon_init(self):
         expected_id = 199
         actual_id = self.equipped_weapon._EquippedWeaponData__bng_weapon_id

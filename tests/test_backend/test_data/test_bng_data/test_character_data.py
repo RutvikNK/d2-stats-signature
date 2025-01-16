@@ -36,7 +36,19 @@ class CharacterDataTestCase(unittest.TestCase):
 
         self.test_character_path = "https://example.com/api/character"
         self.test_equipment_path = "https://example.com/api/equipment"
-    
+
+    def test_character_eq(self):
+        c1 = CharacterData(self.conn, 101, 1, 8989, 1)
+        c2 = CharacterData(self.conn, 101, 1, 8989, 1)
+
+        assert c1 == c2
+
+        c3 = CharacterData(self.conn, 610, 1, 7413, 2)
+        assert c1 != c3
+
+        not_c = "not a character"
+        assert c1 != not_c
+
     def test_character_get_data_called(self):
         self.conn.get_url_request.side_effect = [self.character_data, self.equipment_data]
         self.character.define_data()

@@ -446,7 +446,7 @@ class ActivityStatsData(BungieData):
                         self.__data["precision_kills"] = weapon_data["values"]["uniqueWeaponPrecisionKills"]["basic"]["value"]
                         
                         try:
-                            self.__data["precision_kills_percent"] =  round((self.__data["precision_kills"] / self.__data["kills"]) * 100, 2)
+                            self.__data["precision_kills_percent"] = round((self.__data["precision_kills"] / self.__data["kills"]) * 100, 2)
                         except ZeroDivisionError:
                             self.__data["precision_kills_percent"] = 0.0
                     else:

@@ -36,6 +36,35 @@ class EquippedArmorTestCase(unittest.TestCase):
 
         self.equipped_armor = EquippedArmorData(self.conn, self.armor_to_equip, 10101010101, self.manifest)
 
+    def test_equipped_armor_eq(self):
+        armor1 = MagicMock()
+        mock_armor_data_1 = {
+            "bng_armor_id": 481
+        }
+        armor1.data.__getitem__.side_effect = mock_armor_data_1.__getitem__
+
+        ea1 = EquippedArmorData(self.conn, armor1, 999)
+        ea2 = EquippedArmorData(self.conn, armor1, 999)
+        assert ea1 == ea2
+
+        armor2 = MagicMock()
+        mock_armor_data_2 = {
+            "bng_armor_id": 198
+        }
+        armor2.data.__getitem__.side_effect = mock_armor_data_2.__getitem__
+
+        ea3 = EquippedArmorData(self.conn, armor2, 999)
+        assert ea1 != ea3
+
+        ea4 = EquippedArmorData(self.conn, armor1, 183)
+        assert ea1 != ea4
+
+        ea5 = EquippedArmorData(self.conn, armor2, 183)
+        assert ea1 != ea5
+
+        not_ea = "not an equipped armor"
+        assert ea1 != not_ea
+
     def test_successful_equipped_armor_init(self):
         expected_id = 883
         actual_id = self.equipped_armor._EquippedArmorData__bng_armor_id
