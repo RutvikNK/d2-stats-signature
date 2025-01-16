@@ -11,6 +11,18 @@ class ActivityInstanceDataTestCase(unittest.TestCase):
         self.mock_instance_id = 123456789
         self.pgcr_path = f"https://www.bungie.net/Platform/Destiny2/Stats/PostGameCarnageReport/{self.mock_instance_id}/"
 
+    def test_activity_instance_data_eq(self):
+        aid1 = ActivityInstanceData(self.conn, 775)
+        aid2 = ActivityInstanceData(self.conn, 775)
+
+        assert aid1 == aid2
+
+        aid3 = ActivityInstanceData(self.conn, 160)
+        assert aid1 != aid3
+
+        not_aid = "not activity instance data"
+        assert aid1 != not_aid
+
     def test_successful_post_game_carnage_report(self):
         mock_pgcr_response = {
             "period": "2007-07-07T07:07:07Z",

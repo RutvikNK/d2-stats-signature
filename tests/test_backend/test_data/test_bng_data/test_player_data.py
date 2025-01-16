@@ -31,6 +31,18 @@ class PlayerDataTestCase(unittest.TestCase):
         self.test_member_path = "https://example.com/api/member"
         self.test_profile_path = "https://example.com/api/profile"
     
+    def test_player_eq(self):
+        p1 = PlayerData(self.conn, 101, 2)
+        p2 = PlayerData(self.conn, 101, 1)
+
+        assert p1 == p2
+
+        p3 = PlayerData(self.conn, 201, 1)
+        assert p1 != p3
+
+        not_p = "not a player"
+        assert p1 != not_p
+
     def test_player_get_data_called(self):
         self.player.define_data()
 

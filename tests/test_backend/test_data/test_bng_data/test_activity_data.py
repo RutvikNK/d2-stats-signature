@@ -9,6 +9,18 @@ class ActivityDataTestCase(unittest.TestCase):
         self.rumble_id = 2259621230
         self.rumble_activity = ActivityData(self.conn, self.rumble_id)
     
+    def test_activity_data_eq(self):
+        ad1 = ActivityData(self.conn, 441)
+        ad2 = ActivityData(self.conn, 441)
+
+        assert ad1 == ad2
+
+        ad3 = ActivityData(self.conn, 301)
+        assert ad1 != ad3
+
+        not_ad = "not activity data"
+        assert ad1 != not_ad
+
     def test_successful_activity_data_init(self):
         assert self.rumble_activity._manifest_data
     

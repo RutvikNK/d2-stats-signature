@@ -30,6 +30,18 @@ class ArmorDataTestCase(unittest.TestCase):
         self.good_armor_id = 883
         self.bad_armor_id = 144
     
+    def test_armor_eq(self):
+        a1 = ArmorData(self.conn, 555)
+        a2 = ArmorData(self.conn, 555)
+
+        assert a1 == a2
+
+        a3 = ArmorData(self.conn, 111)
+        assert a1 != a3
+
+        not_a = "not an armor"
+        assert a1 != not_a
+
     def test_successful_armor_manifest_init(self):
         armor = ArmorData(self.conn, self.good_armor_id, self.manifest)
         assert armor._manifest_data

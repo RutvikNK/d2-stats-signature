@@ -35,6 +35,18 @@ class WeaponDataTestCase(unittest.TestCase):
         self.good_weapon_id = 199
         self.bad_weapon_id = 801
 
+    def test_weapon_eq(self):
+        w1 = WeaponData(self.conn, 199)
+        w2 = WeaponData(self.conn, 199)
+
+        assert w1 == w2
+
+        w3 = WeaponData(self.conn, 909)
+        assert w1 != w3
+
+        not_w = "not a weapon"
+        assert w1 != not_w
+
     def test_successful_weapon_manifest_init(self):
         weapon = WeaponData(self.conn, self.good_weapon_id, self.manifest)
         assert weapon._manifest_data
