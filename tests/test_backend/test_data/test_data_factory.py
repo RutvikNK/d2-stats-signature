@@ -307,7 +307,6 @@ class DataFactoryTestCase(unittest.TestCase):
         }
         self.manifest_data.__getitem__.side_effect = mock_manifest.__getitem__
         activity = self.factory.get_activity(771494, self.conn, self.manifest)
-        activity.define_data()
 
         expected_activity_data = {
             "bng_activity_id": 771494,

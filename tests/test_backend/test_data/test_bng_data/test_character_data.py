@@ -112,6 +112,18 @@ class CharacterDataTestCase(unittest.TestCase):
         actual_data = self.character.get_all_equipped_items(self.test_equipment_path)
         assert actual_data == [9009009009]
 
+        self.conn.get_url_request.side_effect = [self.character_data, bad_equipment_data]
+        self.character.define_data()
+        
+        expected_char_data = {
+            "bng_character_id": 111111111,
+            "player_id": 1,
+            "class": "HUNTER",
+            "date_last_played": "2017-07-07",
+        }
+        assert self.character.data == expected_char_data
+        assert self.character.equipment == {"weapons": [], "armor": []}
+
     def test_successful_char_def_data(self):
         self.conn.get_url_request.side_effect = [self.character_data, self.equipment_data]
 
@@ -133,8 +145,19 @@ class CharacterDataTestCase(unittest.TestCase):
         assert self.character.data == expected_char_data
         assert self.character.equipment == expected_equip_data
 
-    def test_unsuccessful_char_def_data(self):
+    def test_unsuccessful_char_def_data_no_response(self):
         self.conn.get_url_request.return_value = None
+
+        self.character.define_data()
+        assert self.conn.get_url_request.called_twice_with([self.test_character_path, self.test_equipment_path])
+
+        assert self.character.data == {}
+        assert self.character.equipment == {}
+
+    def test_unsuccessful_char_def_data_bad_response(self):
+        self.conn.get_url_request.return_value = {
+            "bad key": 100
+        }
 
         self.character.define_data()
         assert self.conn.get_url_request.called_twice_with([self.test_character_path, self.test_equipment_path])

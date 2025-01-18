@@ -188,10 +188,11 @@ class WeaponData(BungieData):
                 self.__data["slot"] = WEAPON_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
                 self.__data["damage_type"]  = DAMAGE_TYPE(self._manifest_data["damageTypes"][0]).name
                 self.__data["rarity"] = RARITY[self._manifest_data["itemTypeAndTierDisplayName"].split(" ")[0].upper()].name
+                return
             except KeyError:
                 pass
-        else:
-            self.__data.clear()
+        
+        self.__data.clear()
 
     @property
     def data(self) -> dict:
@@ -226,10 +227,11 @@ class EquippedWeaponData(BungieData):
                     self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2837207746"]["value"]} swing speed"
                 else:
                     self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["4284893193"]["value"]}rpm"
+                return
             except KeyError:
                 pass
-        else:
-            self.__data.clear()
+
+        self.__data.clear()
 
     @property
     def data(self) -> dict:
@@ -258,10 +260,11 @@ class ArmorData(BungieData):
                 self.__data["armor_name"] = self._manifest_data["displayProperties"]["name"]
                 self.__data["slot"] = ARMOR_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
                 self.__data["rarity"] = RARITY[self._manifest_data["itemTypeAndTierDisplayName"].split(" ")[0].upper()].name
+                return
             except KeyError:
                 pass
-        else:
-            self.__data.clear()
+        
+        self.__data.clear()
     @property
     def data(self) -> dict:
         return self.__data
@@ -289,10 +292,11 @@ class EquippedArmorData(BungieData):
         if self._manifest_data:
             try:
                 self.__data["slot_type"] = ARMOR_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
+                return
             except KeyError:
                 pass
-        else:
-            self.__data.clear()
+
+        self.__data.clear()
 
     @property
     def data(self) -> dict:
@@ -342,10 +346,11 @@ class ActivityData(BungieData):
                     modifiers = modifiers[:100] + "..."
 
                 self.__data["modifiers"] = modifiers
+                return
             except KeyError:
                 pass
-        else:
-            self.__data.clear()
+
+        self.__data.clear()
     
     @property
     def data(self) -> dict:

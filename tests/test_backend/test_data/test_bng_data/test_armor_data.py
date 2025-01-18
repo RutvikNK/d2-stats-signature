@@ -62,8 +62,23 @@ class ArmorDataTestCase(unittest.TestCase):
         }
         assert armor.data == expected_armor_data
 
-    def test_unsuccessful_armor_def_data(self):
+    def test_unsuccessful_armor_def_data_no_manifest_data(self):
         armor = ArmorData(self.conn, self.bad_armor_id, self.manifest)
+        armor.define_data()
+
+        assert armor.data == {}
+
+    def test_unsuccessful_armor_def_data_bad_manifest_data(self):
+        bad_mock_manifest = {
+            "DestinyInventoryItemDefinition": {
+                199: {
+                    "bad key": 100
+                }
+            }
+        }
+        self.manifest_data.__getitem__.side_effect = bad_mock_manifest.__getitem__
+
+        armor = ArmorData(self.conn, self.good_armor_id, self.manifest)
         armor.define_data()
 
         assert armor.data == {}
