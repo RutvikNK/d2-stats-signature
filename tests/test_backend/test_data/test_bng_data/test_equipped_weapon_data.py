@@ -171,3 +171,36 @@ class EquippedWeaponTestCase(unittest.TestCase):
         }
         
         assert exepected_sword_data == equipped_sword.data
+
+    def test_unsuccesful_equipped_weapon_define_data_bad_manifest_data(self):
+        bad_mock_manifest = {
+            "DestinyInventoryItemDefinition": {
+                199: {
+                    "itemTypeDisplayName": "Auto Rifle",
+                    "displayProperties": {
+                        "name": "Weapon Name"
+                    },
+                    "bad key": 100,
+                    "damageTypes": [
+                        7
+                    ],
+                    "itemTypeAndTierDisplayName": "Legendary Auto Rifle",
+                    "stats": {
+                        "stats": {
+                            "4284893193": {
+                                "value": 500
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        self.manifest_data.__getitem__.side_effect = bad_mock_manifest.__getitem__
+
+        weapon = WeaponData(self.conn, 199, self.manifest)
+        weapon.define_data()
+
+        equipped_weapon = EquippedWeaponData(self.conn, weapon, 111, self.manifest)
+        equipped_weapon.define_data()
+
+        assert equipped_weapon.data == {}

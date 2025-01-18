@@ -413,3 +413,8 @@ class ActivityStatsDataTestCase(unittest.TestCase):
         
         expected_precision_kills_percent = 0.0
         assert self.activity_stats.data["precision_kills_percent"] == expected_precision_kills_percent
+
+    def test_get_weapon_none(self):
+        no_weapon = self.activity_stats._ActivityStatsData__get_weapon(dict())
+        assert no_weapon is None
+        
