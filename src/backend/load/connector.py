@@ -4,11 +4,11 @@ class SQLConnector:
     """
     Utility class that creates a MySQL database connection. Allows for executing queries, as well as commits and rollbacks
     """
-    def __init__(self, db_name: str, port: int) -> None:
+    def __init__(self, db_name: str, port: int, user: str="root", password: str="pass") -> None:
         self.db = connector.connect(
             host="localhost",
-            user="root",
-            password="pass",
+            user=user,
+            password=password,
             database=db_name,
             port = port
         )
@@ -16,24 +16,22 @@ class SQLConnector:
     def execute(self, query, params=None):
         cursor = self.db.cursor(buffered=True)
 
-        if params == None:
+        if params is None:
             params = []
 
         try:
             cursor.execute(query, params)
-            self.commit()
-            print(f"Query executed successfully\n")
+
+            result = cursor.fetchall()
+            if result:
+                return result
             
-            try:
-                result = cursor.fetchall()
-                if result:
-                    return result
-            except Exception:
-                pass
+            print("Query executed successfully\n")
+            self.commit()
         except Exception as e:
             self.rollback()
             print(f"{e}")
-            print(f"Query execution failed\n")
+            print("Query execution failed\n")
 
     def commit(self) -> None:
         self.db.commit()
@@ -49,15 +47,16 @@ class SQLConnector:
 
         if result:
             return result
-def main():
-    db = SQLConnector("test", 33061)
-    sql = "SELECT * FROM Armor"
 
-    result = db.execute(sql)
+# def main():
+#     db = SQLConnector("test", 33061)
+#     sql = "SELECT * FROM Armor"
+
+#     result = db.execute(sql)
     
-    if result:
-        for x in result:
-            print(x)
+#     if result:
+#         for x in result:
+#             print(x)
     
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
