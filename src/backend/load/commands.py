@@ -113,7 +113,7 @@ class SelectCommand(Command):
         """
         Executes the select query based on the given class' attributes
         """
-        query = f"SELECT "
+        query = "SELECT "
         if self.__fields:
             for field in self.__fields:
                 query += f"{field}, "
@@ -156,7 +156,7 @@ class DeleteCommand(Command):
 
         print(query)
         self.__obj.execute(query)
-        print(f"Row deleted successfully")
+        print("Row deleted successfully")
 
     def set_command(self):
         """
