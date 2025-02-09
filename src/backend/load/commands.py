@@ -15,48 +15,6 @@ class Command(ABC):
     def set_command(self):
         pass
 
-class CreateTableCommand(Command):
-    """
-    Create table command. Handles the creation of a new table in the given SQLConnector.
-    """
-    def __init__(self, obj: SQLConnector, table_name: str="", columns: dict={}) -> None:
-        self.__obj = obj
-        self.__table_name = table_name
-        self.__col = columns
-
-    def execute(self):
-        """
-        Executes a create table query based on the class' attributes
-        """
-        query = f"CREATE TABLE IF NOT EXISTS {self.__table_name} ("  # construct base query
-        
-        # populate table columns with given column data via the col attribute
-        for col, data_type in self.__col.items():
-            query += f"{col} {data_type}, "
-        else:
-            query = f"{query[:-2]})"  # trim excess off the end
-        
-        print(query)  # print query for debug
-        try:
-            self.__obj.execute(query)  # execute query
-            print(f"Table {self.__table_name} created successfully") 
-        except Exception as e:
-            print(e)
-
-    def set_command(self):
-        """
-        Sets attributes for the command using user input
-        """
-        self.__table_name = input("Enter the name of the table you want to create: ")  # get table name
-        
-        # get table attributes via a loop with appropriate data type and key syntax
-        while True:
-            field = input("Enter the name of the attribute and its data type (including any key details), separated by a semicolon (;) (Ex. 'id;INT PRIMARY KEY):")
-            self.__col[field.split(";")[0]] = field.split(";")[1]  # append new column details to col attribute
-            more = input("Add another column? (y/n): ").upper()  # ask to add more
-            if more == "N":
-                break
-
 class InsertCommand(Command):
     """
     Insert command, handles adding rows to the given table. Allows for multiple rows to be added
@@ -122,9 +80,13 @@ class SelectCommand(Command):
         else:
             query += f"* FROM {self.__table_name}"
 
-        query += " WHERE "
-        for k, v, in self.__conditions.items():
-            query += f"{k} = {v}"
+        if self.__conditions:
+            query += " WHERE "
+            for k, v, in self.__conditions.items():
+                if isinstance(v, int) or isinstance(v, float):
+                    query += f"{k} = {v}"
+                else:
+                    query += f'{k} = "{v}"'
 
         print(query)
         result = self.__obj.execute(query)
@@ -138,31 +100,31 @@ class SelectCommand(Command):
         self.__fields = fields
         self.__conditions = condition
 
-class DeleteCommand(Command):
-    """
-    Delete command, handles deleting specified rows from the given table.
-    """
-    def __init__(self, obj: SQLConnector, table_name: str="", data: dict={}) -> None:
-        self.__obj = obj
-        self.__table_name = table_name
-        self.__data = data
+# class DeleteCommand(Command):
+#     """
+#     Delete command, handles deleting specified rows from the given table.
+#     """
+#     def __init__(self, obj: SQLConnector, table_name: str="", data: dict={}) -> None:
+#         self.__obj = obj
+#         self.__table_name = table_name
+#         self.__data = data
 
-    def execute(self):
-        """
-        Executes the delete command based on the class' attributes
-        """
-        keys = list(self.__data.keys())
-        query = f"DELETE FROM {self.__table_name} WHERE {keys[0]} = {self.__data[keys[0]]}"
+#     def execute(self):
+#         """
+#         Executes the delete command based on the class' attributes
+#         """
+#         keys = list(self.__data.keys())
+#         query = f"DELETE FROM {self.__table_name} WHERE {keys[0]} = {self.__data[keys[0]]}"
 
-        print(query)
-        self.__obj.execute(query)
-        print("Row deleted successfully")
+#         print(query)
+#         self.__obj.execute(query)
+#         print("Row deleted successfully")
 
-    def set_command(self):
-        """
-        Allows ssetting the attribtues of the delete command
-        """
-        self.__table_name = input("Enter the name of the table you want to delete from: ")
+#     def set_command(self):
+#         """
+#         Allows ssetting the attribtues of the delete command
+#         """
+#         self.__table_name = input("Enter the name of the table you want to delete from: ")
 
-        condition = input("Enter the column and its value for the delete condition, separate by a semicolon (;). Include \"\" for any TEXT data types!: ")
-        self.__data[condition.split(";")[0]] = condition.split(";")[1]
+#         condition = input("Enter the column and its value for the delete condition, separate by a semicolon (;). Include \"\" for any TEXT data types!: ")
+#         self.__data[condition.split(";")[0]] = condition.split(";")[1]
