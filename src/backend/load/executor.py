@@ -28,12 +28,12 @@ class DatabaseExecutor:
     def retrieve_all(self, table_name: str):
         return self.__db.retrieve_all(table_name)
     
-def main():
-    conn = SQLConnector("test", 33061)
-    executor = DatabaseExecutor(conn)
+# def main():
+#     conn = SQLConnector("test", 33061)
+#     executor = DatabaseExecutor(conn)
 
-    result = executor.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": 1916287826})
-    print(result)
+#     result = executor.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": 1916287826})
+#     print(result)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
