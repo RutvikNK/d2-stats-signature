@@ -5,3 +5,5 @@ mysql-connector-python
 urllib
 pytest
 pytest-cov
+fastapi
+uivcorn
