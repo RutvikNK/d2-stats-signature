@@ -37,7 +37,7 @@ class DatabasePlayerManager:
                 self.add_existing_player(tuple)
 
     def add_existing_player(self, data) -> None:
-        player = PlayerData(BNG_CONN, tuple[1], PLATFORM[tuple[6]].value) # type: ignore
+        player = PlayerData(BNG_CONN, data[1], PLATFORM[data[6]].value) # type: ignore
         player.define_data()
         if player not in self.__players:
             self.__players.append(player)
@@ -57,14 +57,17 @@ class DatabasePlayerManager:
     def get_character_and_player_ids(self, member_id: int):
         result = self.__control.select_rows("`Player`", ["character_ids", "player_id"], {"destiny_id": member_id})
 
-        character_ids = str(result[0][0].replace("[", ""))  # type: ignore
-        character_ids = character_ids.replace("]", "")
-        character_ids = character_ids.replace("\'", "")
-        character_ids = character_ids.split(", ")
-        for i in range(len(character_ids)):
-            character_ids[i] = int(character_ids[i])  # type: ignore
+        if result:
+            character_ids = str(result[0][0].replace("[", ""))  # type: ignore
+            character_ids = character_ids.replace("]", "")
+            character_ids = character_ids.replace("\'", "")
+            character_ids = character_ids.split(", ")
+            for i in range(len(character_ids)):
+                character_ids[i] = int(character_ids[i])  # type: ignore
 
-        return character_ids, result[0][1] # type: ignore
+            return character_ids, result[0][1] # type: ignore
+        else:
+            return None, None
 
 class DatabaseCharacterManager:
     def __init__(self, db_control: DatabaseExecutor) -> None:
@@ -291,57 +294,57 @@ class DatabaseManager:
                 for armor_id in equipped_armor:
                     self.__e_manager.add_new_armor(armor_id, bng_character_id)
 
-def main():
-    connection = SQLConnector("test", 33061)
-    control = DatabaseExecutor(connection)
+# def main():
+#     connection = SQLConnector("test", 33061)
+#     control = DatabaseExecutor(connection)
     
-    player_manager = DatabasePlayerManager(control)
-    char_manager = DatabaseCharacterManager(control)
-    weapon_manager = DatabaseWeaponManager(control)
-    armor_manager = DatabaseArmorManager(control)
-    activity_manager = DatabaseActivityManager(control)
-    instance_manager = DatabaseActivityInstanceManager(control)
-    equipment_manager = EquipmentManager(control, weapon_manager, armor_manager)
+#     player_manager = DatabasePlayerManager(control)
+#     char_manager = DatabaseCharacterManager(control)
+#     weapon_manager = DatabaseWeaponManager(control)
+#     armor_manager = DatabaseArmorManager(control)
+#     activity_manager = DatabaseActivityManager(control)
+#     instance_manager = DatabaseActivityInstanceManager(control)
+#     equipment_manager = EquipmentManager(control, weapon_manager, armor_manager)
 
-    db_manager = DatabaseManager(control, activity_manager, weapon_manager, char_manager, player_manager, equipment_manager)
+#     db_manager = DatabaseManager(control, activity_manager, weapon_manager, char_manager, player_manager, equipment_manager)
 
-    members = {
-        4611686018441248186: 1,
-        4611686018466583801: 2,
-        4611686018467428939: 3,
-        4611686018467632157: 3,
-        4611686018456510427: 1,
-    }
-    activities = [type.value for type in ACTIVITY_TYPE]
+#     members = {
+#         4611686018441248186: 1,
+#         4611686018466583801: 2,
+#         4611686018467428939: 3,
+#         4611686018467632157: 3,
+#         4611686018456510427: 1,
+#     }
+#     activities = [type.value for type in ACTIVITY_TYPE]
 
-    for member_id, player_type in members.items():
-        player_manager.add_new_player(member_id, player_type)
-        result = player_manager.get_character_and_player_ids(member_id)
-        character_ids = result[0]
-        player_id = result[1]
+#     for member_id, player_type in members.items():
+#         player_manager.add_new_player(member_id, player_type)
+#         result = player_manager.get_character_and_player_ids(member_id)
+#         character_ids = result[0]
+#         player_id = result[1]
 
-        for char_id in character_ids:
-            char_manager.add_new_character(member_id, player_type, int(char_id), player_id)  # type: ignore
-            db_manager.add_character_equipment(int(char_id))
+#         for char_id in character_ids:
+#             char_manager.add_new_character(member_id, player_type, int(char_id), player_id)  # type: ignore
+#             db_manager.add_character_equipment(int(char_id))
 
-        for activity in activities:
-            print(f"{member_id=}")
-            print(f"{player_type=}")
-            print(f"{activity=}")
-            sleep(5)
-            instance_ids = char_manager.get_activity_history(character_ids[0], activity, 5)  # type: ignore
-            print(instance_ids)
-            if instance_ids:
-                for id in instance_ids:
-                    instance_manager.create_instance(id)
-                    instance_manager.create_instance_stats(id)
+#         for activity in activities:
+#             print(f"{member_id=}")
+#             print(f"{player_type=}")
+#             print(f"{activity=}")
+#             sleep(5)
+#             instance_ids = char_manager.get_activity_history(character_ids[0], activity, 5)  # type: ignore
+#             print(instance_ids)
+#             if instance_ids:
+#                 for id in instance_ids:
+#                     instance_manager.create_instance(id)
+#                     instance_manager.create_instance_stats(id)
             
-            instance_list = instance_manager.get_instances()
-            db_manager.add_new_stat_block(instance_list[-1])
-        sleep(5)
+#             instance_list = instance_manager.get_instances()
+#             db_manager.add_new_stat_block(instance_list[-1])
+#         sleep(5)
     
-    print("DB population complete!")
+#     print("DB population complete!")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
     
