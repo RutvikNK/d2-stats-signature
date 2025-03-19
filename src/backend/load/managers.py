@@ -75,14 +75,12 @@ class DatabaseCharacterManager:
         self.__characters: list[CharacterData] = []
 
     def add_new_character(self, member_id: int, member_type: int, character_id: int, player_id: int=-1) -> None:
-        # exisitng_char = self.__control.select_rows("`Character`", ["character_id"], {"bng_character_id": character_id})
-
-        # if not exisitng_char:
-            if player_id == -1:
-                player = self.__control.select_rows("`Player`", ["player_id"], {"destiny_id": member_id})
-                if player:
-                    player_id = player[0][0]  # type: ignore
-            
+        if player_id == -1:
+            player = self.__control.select_rows("`Player`", ["player_id"], {"destiny_id": member_id})
+            if player:
+                player_id = player[0][0]  # type: ignore
+        
+        if player_id != -1:
             new_char = DataFactory.get_character(member_id, member_type, character_id, player_id)
             
             if new_char not in self.__characters:
