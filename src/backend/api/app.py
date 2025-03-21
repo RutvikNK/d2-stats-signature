@@ -106,6 +106,10 @@ async def get_user_by_id(player_id: int):
     
     return {"Error": "Player not found"}, 404
 
+@app.post("/d2/user")
+async def post_user(username: str):
+    pass
+
 @app.get("/d2/weapon/{weapon_id}")
 async def get_weapon_by_id(weapon_id: int):
     query = f"SELECT * FROM `Weapon` WHERE weapon_id = {weapon_id}"
@@ -119,6 +123,10 @@ async def get_weapon_by_id(weapon_id: int):
     
     return {"Error": "Weapon not found"}, 404
 
+@app.post("/d2/weapon/")
+async def post_weapon(weapon_id: int):
+    pass
+
 @app.get("/d2/armor/{armor_id}")
 async def get_armor_by_id(armor_id: int):
     query = f"SELECT * FROM `Armor` WHERE armor_id = {armor_id}"
@@ -131,6 +139,10 @@ async def get_armor_by_id(armor_id: int):
             return {"Error": "Error parsing armor data"}, 500
     
     return {"Error": "Armor not found"}, 404
+
+@app.post("/d2/armor/")
+async def post_armor(armor_id: int):
+    pass
 
 @app.get("/d2/user/activity_stats/{destiny_id}/")
 async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, character_id: int=0, mode: str="", count: int=0):
@@ -203,3 +215,7 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
         return {"Error": "Account characters not found"}, 404
     
     return "Activity stats not found", 404
+
+@app.post("/d2/user/activity")
+async def post_activity_stats(char_id: int, instance_id: int):
+    pass
