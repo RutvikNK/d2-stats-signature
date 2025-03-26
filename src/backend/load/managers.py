@@ -36,6 +36,28 @@ class DatabasePlayerManager:
             for tuple in db_data:
                 self.add_existing_player(tuple)
 
+    def add_player_by_username(self, username: str, platform: int) -> PlayerData | None:
+        path = f"https://www.bungie.net/Platform/Destiny2/SearchDestinyPlayerByBungieName/{platform}/"
+        try:
+            split_username = username.split("#")
+            body = {"displayName": split_username[0], "displayNameCode": split_username[1]}
+            resp = BNG_CONN.get_url_request(path, body)
+        except ValueError:
+            return None
+        except IndexError:
+            return None
+        
+        if resp:
+            member_id = int(resp[0]["membershipId"])
+            player = DataFactory.get_player(member_id, platform)
+            if player not in self.__players:
+                self.__players.append(player)
+            
+            self.__control.insert_row("`Player`", player)
+            return player
+        else:
+            return None
+    
     def add_existing_player(self, data) -> None:
         player = PlayerData(BNG_CONN, data[1], PLATFORM[data[6]].value) # type: ignore
         player.define_data()
@@ -104,15 +126,17 @@ class DatabaseWeaponManager:
         self.__control: DatabaseExecutor = db_control
         self.__weapons: list[WeaponData] = []
 
-    def add_new_weapon(self, weapon_id: int) -> None:
+    def add_new_weapon(self, weapon_id: int) -> WeaponData:
         # exisiting_weapon = self.__control.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": weapon_id})
         
         # if not exisiting_weapon:
-            new_weapon = DataFactory.get_weapon(weapon_id)  
-            if new_weapon not in self.__weapons:
-                self.__weapons.append(new_weapon)
+        new_weapon = DataFactory.get_weapon(weapon_id)  
+        if new_weapon not in self.__weapons:
+            self.__weapons.append(new_weapon)
 
-            self.__control.insert_row("`Weapon`", new_weapon)
+        self.__control.insert_row("`Weapon`", new_weapon)
+
+        return new_weapon
 
     def get_weapon(self, bng_weapon_id: int) -> Optional[WeaponData]:
         for weapon in self.__weapons:
@@ -124,15 +148,17 @@ class DatabaseArmorManager:
         self.__control: DatabaseExecutor = db_control
         self.__armor: list[ArmorData] = []
 
-    def add_new_armor(self, armor_id: int) -> None:
+    def add_new_armor(self, armor_id: int) -> ArmorData:
         # existing_armor = self.__control.select_rows("`Armor`", ["armor_id"], {"bng_armor_id": armor_id})
         
         # if not existing_armor:
-            new_armor = DataFactory.get_armor(armor_id)
-            if new_armor not in self.__armor:
-                self.__armor.append(new_armor)
+        new_armor = DataFactory.get_armor(armor_id)
+        if new_armor not in self.__armor:
+            self.__armor.append(new_armor)
 
-            self.__control.insert_row("`Armor`", new_armor)
+        self.__control.insert_row("`Armor`", new_armor)
+
+        return new_armor
 
     def get_armor(self, bng_armor_id: int) -> Optional[ArmorData]:
         for armor in self.__armor:
@@ -248,10 +274,8 @@ class DatabaseManager:
 
         self.__stats_data: list[ActivityStatsData] = []
 
-    def add_new_stat_block(self, instance: ActivityInstanceData) -> None:
-        instance_stats = instance.get_instance_stats()
-
-        for stat in instance_stats:
+    def add_new_stat_block(self, instance: ActivityInstanceData, bng_char_id: int=0) -> ActivityStatsData | bool:
+        def define_stats(stat: ActivityStatsData):
             if stat.data:
                 self.__a_manager.add_new_activity(stat.og_data["bng_activity_id"])
                 self.__w_manager.add_new_weapon(stat.og_data["bng_weapon_id"])
@@ -275,6 +299,23 @@ class DatabaseManager:
                     self.__stats_data.append(stat)
 
                 self.__control.insert_row("`Activity_Stats`", stat)
+                return stat
+
+        if bng_char_id:
+            result = self.__control.select_rows("Activity_Stats", ["*"], {"instance_id": instance.instance_id})
+            if result:
+                return False
+
+        instance_stats = instance.get_instance_stats()
+        for stat in instance_stats:
+            if bng_char_id and stat.og_data["bng_character_id"] == bng_char_id:
+                defined_stat_block = define_stats(stat)
+                if defined_stat_block:
+                    return defined_stat_block
+            elif not bng_char_id:
+                define_stats(stat)
+        else:
+            return True
 
     def add_character_equipment(self, character_id: int) -> None:
         character = self.__c_manager.find_character(character_id)
@@ -284,7 +325,6 @@ class DatabaseManager:
             bng_character_id = character.data["bng_character_id"]
             
             if equipped_weapons:
-
                 for weapon_id in equipped_weapons:
                     self.__e_manager.add_new_weapon(weapon_id, bng_character_id)
 

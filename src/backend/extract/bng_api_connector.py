@@ -5,8 +5,13 @@ class BungieConnector:
     def __init__(self, x_api_key: str) -> None:
         self.__request_header = {"X-API-KEY": x_api_key}
 
-    def get_url_request(self, path: str, method: str | None=None):
-        req = Request(path, headers=self.__request_header, method=method)
+    def get_url_request(self, path: str, body=None):
+        if body:
+            body = json.dumps(body)
+            body = str(body)
+            body = body.encode('utf-8')
+
+        req = Request(path, headers=self.__request_header, data=body)
         with urlopen(req) as response:
             json_out = json.loads(response.read())
         if json_out:

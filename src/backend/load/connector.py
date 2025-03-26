@@ -13,7 +13,7 @@ class SQLConnector:
             port = port
         )
 
-    def execute(self, query, params=None):
+    def execute(self, query: str, params=None):
         cursor = self.db.cursor(buffered=True)
 
         if params is None:
@@ -22,9 +22,10 @@ class SQLConnector:
         try:
             cursor.execute(query, params)
 
-            result = cursor.fetchall()
-            if result:
-                return result
+            if query.startswith("SELECT"):
+                result = cursor.fetchall()
+                if result:
+                    return result
             
             print("Query executed successfully\n")
             self.commit()
