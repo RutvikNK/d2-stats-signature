@@ -1,8 +1,38 @@
-from fastapi import FastAPI
+import uvicorn
+from fastapi import FastAPI, Response, status
+from time import sleep
+from urllib.error import HTTPError
 
+from backend.data.bng_data import ActivityStatsData
+from backend.data.bng_types import ACTIVITY_TYPE
 from backend.load.connector import SQLConnector
+from backend.load.managers import (
+    DatabasePlayerManager,
+    DatabaseCharacterManager,
+    DatabaseWeaponManager,
+    DatabaseArmorManager,
+    EquipmentManager,
+    DatabaseActivityInstanceManager,
+    DatabaseActivityManager,
+    DatabaseManager
+)
+from backend.load.executor import DatabaseExecutor
 
 db_conn = SQLConnector("signature", 33061)
+db_exec = DatabaseExecutor(db_conn)
+
+activities = [type.value for type in ACTIVITY_TYPE]
+
+player_manager = DatabasePlayerManager(db_exec)
+weapon_manager = DatabaseWeaponManager(db_exec)
+armor_manager = DatabaseArmorManager(db_exec)
+instance_manager = DatabaseActivityInstanceManager(db_exec)
+activity_manager = DatabaseActivityManager(db_exec)
+character_manager = DatabaseCharacterManager(db_exec)
+equip_manager = EquipmentManager(db_exec, weapon_manager, armor_manager)
+
+db_manager = DatabaseManager(db_exec, activity_manager, weapon_manager, character_manager, player_manager, equip_manager)
+
 app = FastAPI()
 
 player_cols = [
@@ -93,6 +123,26 @@ def get_mult_activity_stats(char_id, act_id=0):
 
     return mult_resp
 
+def verify_platform(platform: int):
+    if platform > 0 and platform <= 4:
+        return True
+    else:
+        return False
+
+def verify_bng_username(username: str) -> bool:
+    try:
+        split_username = username.split("#")
+        if len(split_username[1]) > 4:
+            return False
+        else:
+            username_code = int(split_username[1])
+    except ValueError:
+        return False
+    except IndexError:
+        return False
+    
+    return True
+
 @app.get("/d2/user/{player_id}")
 async def get_user_by_id(player_id: int):
     query = f"SELECT * FROM `Player` WHERE player_id = {player_id}"
@@ -105,6 +155,45 @@ async def get_user_by_id(player_id: int):
             return {"Error": "Error parsing player data"}, 500
     
     return {"Error": "Player not found"}, 404
+
+@app.post("/d2/user")
+async def post_new_user(username: str, platform: int):
+    if verify_platform(platform) and verify_bng_username(username):
+        new_player = player_manager.add_player_by_username(username, platform)
+        if new_player:
+            member_id = new_player.data["destiny_id"]
+            result = player_manager.get_character_and_player_ids(member_id)
+            character_ids = result[0]
+            player_id = result[1]
+
+            if character_ids:
+                for char_id in character_ids:
+                    try:
+                        character_manager.add_new_character(member_id, platform, int(char_id), player_id)  # type: ignore
+                        db_manager.add_character_equipment(int(char_id))
+
+                        for activity in activities:
+                            print(f"{member_id=}")
+                            print(f"{platform=}")
+                            print(f"{activity=}")
+                            sleep(5)
+                            instance_ids = character_manager.get_activity_history(char_id, activity, 5)  # type: ignore
+                            print(instance_ids)
+                            if instance_ids:
+                                for id in instance_ids:
+                                    instance_manager.create_instance(id)
+                                    instance_manager.create_instance_stats(id)
+                            
+                            instance_list = instance_manager.get_instances()
+                            db_manager.add_new_stat_block(instance_list[-1], int(char_id))
+                        
+                        return new_player.data, 201
+                    except Exception as e:
+                        print(f"Error: {e}")
+            else:
+                return {"Error": f"Could not find character IDs for {username}"}
+        else:
+            return {"Error": f"Could not POST new player {username} with account on platform {platform}"}
 
 @app.get("/d2/weapon/{weapon_id}")
 async def get_weapon_by_id(weapon_id: int):
@@ -119,6 +208,14 @@ async def get_weapon_by_id(weapon_id: int):
     
     return {"Error": "Weapon not found"}, 404
 
+@app.post("/d2/weapon/")
+async def post_weapon(weapon_id: int):
+    new_weapon = weapon_manager.add_new_weapon(weapon_id)
+    if new_weapon:
+        return new_weapon.data, 201
+    else:
+        return {"Error": f"Error posting new weapon {weapon_id}"}, 500
+
 @app.get("/d2/armor/{armor_id}")
 async def get_armor_by_id(armor_id: int):
     query = f"SELECT * FROM `Armor` WHERE armor_id = {armor_id}"
@@ -132,6 +229,14 @@ async def get_armor_by_id(armor_id: int):
     
     return {"Error": "Armor not found"}, 404
 
+@app.post("/d2/armor/")
+async def post_armor(armor_id: int):
+    new_armor = armor_manager.add_new_armor(armor_id)
+    if new_armor:
+        return new_armor.data, 201
+    else:
+        return {"Error": f"Error posting new armor {armor_id}"}, 500
+
 @app.get("/d2/user/activity_stats/{destiny_id}/")
 async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, character_id: int=0, mode: str="", count: int=0):
     if mode and activity_id:
@@ -142,9 +247,13 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
 
     if character_id == 0:
         mult_character_ids = get_character_ids(destiny_id)
+        if not mult_character_ids:
+            return {"Error": f"No characters found for the given user {destiny_id}"}, 404
 
     if activity_id == 0 and mode:
         mult_activity_ids = get_activity_ids_by_mode(mode)
+        if not mult_activity_ids:
+            return {"Error": f"No matching activities found for the given mode {mode}"}, 404
 
     if mult_character_ids:
         mult_resp = []
@@ -203,3 +312,20 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
         return {"Error": "Account characters not found"}, 404
     
     return "Activity stats not found", 404
+
+@app.post("/d2/user/activity_stats")
+async def post_activity_stats(character_id: int, instance_id: int, response: Response):
+    instance_data = instance_manager.create_instance(instance_id)
+    instance_data.create_stats()
+    stat = db_manager.add_new_stat_block(instance_data, character_id)
+    
+    if isinstance(stat, ActivityStatsData):
+        response.status_code = status.HTTP_201_CREATED
+        return stat.data, stat.participant, 201
+    elif not stat:
+        response.status_code = status.HTTP_409_CONFLICT
+        return {"Error": f"Activity instance {instance_id} already logged"}, 409
+
+if __name__ == "__main__":
+    # for debugging
+    uvicorn.run(app, host="0.0.0.0", port=8000)
