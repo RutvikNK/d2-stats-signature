@@ -361,6 +361,18 @@ class DatabaseManager:
                 for armor_id in equipped_armor:
                     self.__e_manager.add_new_armor(armor_id, bng_character_id)
 
+    def delete_stat_block(self, character_id: int, instance_id: int):
+        existing_stat_block = self.__control.select_rows("Activity_Stats", ["*"], {"character_id": character_id, "instance_id": instance_id})
+        if existing_stat_block:
+            delete_result = self.__control.delete_row("Activity_Stats", {"character_id": character_id, "instance_id": instance_id})
+            if delete_result:
+                for stat in self.__stats_data:
+                    if stat.data["character_id"] == character_id and stat.data["instance_id"] == instance_id:
+                        self.__stats_data.remove(stat)
+                        break
+                    
+                return existing_stat_block
+
 # def main():
 #     connection = SQLConnector("test", 33061)
 #     control = DatabaseExecutor(connection)

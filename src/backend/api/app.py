@@ -75,7 +75,7 @@ activity_stats_cols = [
     "character_class"
 ]
 
-def convert_to_dict(cols: list[str], result):
+def convert_to_dict(cols: list, result):
     if len(cols) == len(result):
         resp: dict = {}
         for i, col in enumerate(cols):
@@ -379,6 +379,17 @@ async def post_activity_stats(character_id: int, instance_id: int, response: Res
     elif not stat:
         response.status_code = status.HTTP_409_CONFLICT
         return {"Error": f"Activity instance {instance_id} already logged"}, 409
+
+@app.delete("/d2/user/activity_stats")
+async def delete_activity_stats(character_id: int, instance_id: int, response: Response):
+    delete_result = db_manager.delete_stat_block(character_id, instance_id)
+    if delete_result and isinstance(delete_result, list):
+        delete_result = convert_to_dict(activity_stats_cols, delete_result[0])
+        response.status_code = status.HTTP_200_OK
+        return delete_result, 200
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"Error": f"Activity instance {instance_id} for character {character_id} not found"}, 404
 
 if __name__ == "__main__":
     # for debugging

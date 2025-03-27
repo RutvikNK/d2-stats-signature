@@ -43,6 +43,17 @@ class DatabaseExecutor:
 
         return self.__db.execute(query)
 
+    def delete_row(self, table_name: str, conditions: dict):
+        """
+        Delete a row from a table
+        """
+        query = "DELETE FROM " + table_name + " WHERE "
+        for key, value in conditions.items():
+            query += key + " = " + str(value) + " AND "
+        query = query[:-5]
+        
+        return self.__db.execute(query)
+
     def retrieve_all(self, table_name: str):
         return self.__db.retrieve_all(table_name)
     
