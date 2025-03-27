@@ -29,10 +29,12 @@ class SQLConnector:
             
             print("Query executed successfully\n")
             self.commit()
+            return True
         except Exception as e:
             self.rollback()
             print(f"{e}")
             print("Query execution failed\n")
+            return False
 
     def commit(self) -> None:
         self.db.commit()

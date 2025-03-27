@@ -36,6 +36,17 @@ class DatabasePlayerManager:
             for tuple in db_data:
                 self.add_existing_player(tuple)
 
+    def update_date_last_played(self, member_id: int, platform: int):
+        player = PlayerData(BNG_CONN, member_id, platform)
+        player.define_data()
+
+        data = {"date_last_played": player.data["date_last_played"]}
+        conditions = {"destiny_id": member_id}
+
+        if player.data:
+            self.__control.update_row("`Player`", data, conditions)
+            return player
+
     def add_player_by_username(self, username: str, platform: int) -> PlayerData | None:
         path = f"https://www.bungie.net/Platform/Destiny2/SearchDestinyPlayerByBungieName/{platform}/"
         try:
@@ -126,6 +137,15 @@ class DatabaseWeaponManager:
         self.__control: DatabaseExecutor = db_control
         self.__weapons: list[WeaponData] = []
 
+    def update_weapon(self, weapon_id: int):
+        bng_weapon_id = self.__control.select_rows("`Weapon`", ["bng_weapon_id"], {"weapon_id": weapon_id})
+        
+        if bng_weapon_id and bng_weapon_id[0][0] != 0:  # type: ignore
+            weapon = DataFactory.get_weapon(bng_weapon_id[0][0])  # type: ignore
+            result = self.__control.update_row("`Weapon`", weapon.data, {"bng_weapon_id": weapon.data["bng_weapon_id"]})
+            if result:
+                return weapon.data
+
     def add_new_weapon(self, weapon_id: int) -> WeaponData:
         # exisiting_weapon = self.__control.select_rows("`Weapon`", ["weapon_id"], {"bng_weapon_id": weapon_id})
         
@@ -147,6 +167,15 @@ class DatabaseArmorManager:
     def __init__(self, db_control: DatabaseExecutor) -> None:
         self.__control: DatabaseExecutor = db_control
         self.__armor: list[ArmorData] = []
+
+    def update_armor(self, armor_id: int):
+        bng_armor_id = self.__control.select_rows("`Armor`", ["bng_armor_id"], {"armor_id": armor_id})
+        
+        if bng_armor_id and bng_armor_id[0][0] != 0:  # type: ignore
+            armor = DataFactory.get_armor(bng_armor_id[0][0])  # type: ignore
+            result = self.__control.update_row("`Armor`", armor.data, {"bng_armor_id": armor.data["bng_armor_id"]})
+            if result:
+                return armor.data
 
     def add_new_armor(self, armor_id: int) -> ArmorData:
         # existing_armor = self.__control.select_rows("`Armor`", ["armor_id"], {"bng_armor_id": armor_id})

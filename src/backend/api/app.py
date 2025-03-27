@@ -143,6 +143,26 @@ def verify_bng_username(username: str) -> bool:
     
     return True
 
+def verify_date_format(date: str) -> bool:
+    try:
+        split_date = date.split("-")
+        if len(split_date) != 3:
+            return False
+        else:
+            if len(split_date[0]) != 4 and len(split_date[1]) != 2 and len(split_date[2]) != 2:
+                return False
+            
+            for i in range(3):
+                int(split_date[i])
+            
+            if int(split_date[1]) > 12 or int(split_date[2]) > 31:
+                return False
+
+    except ValueError:
+        return False
+    
+    return True
+
 @app.get("/d2/user/{player_id}")
 async def get_user_by_id(player_id: int):
     query = f"SELECT * FROM `Player` WHERE player_id = {player_id}"
@@ -195,6 +215,20 @@ async def post_new_user(username: str, platform: int):
         else:
             return {"Error": f"Could not POST new player {username} with account on platform {platform}"}
 
+@app.patch("/d2/user/{member_id}")
+async def patch_user_last_played(member_id: int, platform: int, response: Response):
+    if verify_platform(platform):
+        result = player_manager.update_date_last_played(member_id, platform)
+        if result:
+            response.status_code = status.HTTP_200_OK
+            return result.data, 200
+        else:
+            response.status_code = status.HTTP_404_NOT_FOUND
+            return {"Error": f"Player {member_id} not found"}, 404
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return {"Error": f"Invalid platform {platform} requested"}, 400
+
 @app.get("/d2/weapon/{weapon_id}")
 async def get_weapon_by_id(weapon_id: int):
     query = f"SELECT * FROM `Weapon` WHERE weapon_id = {weapon_id}"
@@ -216,6 +250,16 @@ async def post_weapon(weapon_id: int):
     else:
         return {"Error": f"Error posting new weapon {weapon_id}"}, 500
 
+@app.put("/d2/weapon/{weapon_id}")
+async def put_weapon(weapon_id: int, response: Response):
+    update_result = weapon_manager.update_weapon(weapon_id)
+    if update_result:
+        response.status_code = status.HTTP_200_OK
+        return update_result, 200
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"Error": f"Weapon {weapon_id} not found"}, 404
+
 @app.get("/d2/armor/{armor_id}")
 async def get_armor_by_id(armor_id: int):
     query = f"SELECT * FROM `Armor` WHERE armor_id = {armor_id}"
@@ -236,6 +280,16 @@ async def post_armor(armor_id: int):
         return new_armor.data, 201
     else:
         return {"Error": f"Error posting new armor {armor_id}"}, 500
+
+@app.put("/d2/armor/{armor_id}")
+async def put_armor(armor_id: int, response: Response):
+    update_result = armor_manager.update_armor(armor_id)
+    if update_result:
+        response.status_code = status.HTTP_200_OK
+        return update_result, 200
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"Error": f"Armor {armor_id} not found"}, 404
 
 @app.get("/d2/user/activity_stats/{destiny_id}/")
 async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, character_id: int=0, mode: str="", count: int=0):

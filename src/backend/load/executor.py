@@ -25,6 +25,24 @@ class DatabaseExecutor:
         self.__select_command.set_command(table_name, fields, condition)
         return self.__select_command.execute()
 
+    def update_row(self, table_name: str, data: dict, conditions: dict):
+        """
+        Update a row in a table
+        """
+        query = "UPDATE " + table_name + " SET "
+        for key, value in data.items():
+            if isinstance(value, str):
+                query += key + " = '" + value + "', "
+            else:
+                query += key + " = " + str(value) + ", "
+        
+        query = query[:-2] + " WHERE "
+        for key, value in conditions.items():
+            query += key + " = " + str(value) + " AND "
+        query = query[:-5]
+
+        return self.__db.execute(query)
+
     def retrieve_all(self, table_name: str):
         return self.__db.retrieve_all(table_name)
     
