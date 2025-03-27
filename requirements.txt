@@ -6,5 +6,4 @@ urllib3
 pytest
 pytest-cov
 fastapi
-fastapi[standard]
-# uvicorn
+uvicorn
