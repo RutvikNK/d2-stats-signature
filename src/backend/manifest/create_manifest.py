@@ -21,7 +21,7 @@ def create_manifest(path: str | None=PATH, x_api_key: str | None=X_API_KEY):
     manifest_url = 'http://www.bungie.net/Platform/Destiny2/Manifest/'
 
     #get the manifest location from the json
-    r = requests.get(manifest_url, headers={'X-API-KEY': X_API_KEY})
+    r = requests.get(manifest_url, headers={'X-API-KEY': x_api_key})
     manifest = r.json()
     mani_url = 'http://www.bungie.net' + manifest['Response']['mobileWorldContentPaths']['en']
 
@@ -41,7 +41,7 @@ def create_manifest(path: str | None=PATH, x_api_key: str | None=X_API_KEY):
 
 def build_dict(hash_dict, path: str | None=PATH):
     #connect to the manifest
-    con = sqlite3.connect(f'{path}/manifest.content')
+    con = sqlite3.connect(f'{path}/Manifest.content')
     print('Connected')
     #create a cursor object
     cur = con.cursor()
