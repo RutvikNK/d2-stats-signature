@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, Response, status
 from time import sleep
-from urllib.error import HTTPError
+import psutil
 
 from backend.data.bng_data import ActivityStatsData
 from backend.data.bng_types import ACTIVITY_TYPE
@@ -390,6 +390,17 @@ async def delete_activity_stats(character_id: int, instance_id: int, response: R
     else:
         response.status_code = status.HTTP_404_NOT_FOUND
         return {"Error": f"Activity instance {instance_id} for character {character_id} not found"}, 404
+
+@app.get("/memory")
+async def get_memory_usage():
+    memory = psutil.virtual_memory()
+    return {
+        "total": memory.total,
+        "available": memory.available,
+        "used": memory.used,
+        "free": memory.free,
+        "percent": memory.percent
+    }
 
 if __name__ == "__main__":
     # for debugging
