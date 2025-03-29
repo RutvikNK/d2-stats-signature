@@ -1,7 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, Response, status
 from time import sleep
-from urllib.error import HTTPError
 
 from backend.data.bng_data import ActivityStatsData
 from backend.data.bng_types import ACTIVITY_TYPE
@@ -46,7 +45,7 @@ player_cols = [
     "character_ids"
 ]
 weapon_cols = [
-    "weeapon_id", 
+    "weapon_id", 
     "ammo_type", 
     "bng_weapon_id", 
     "damage_type", 
