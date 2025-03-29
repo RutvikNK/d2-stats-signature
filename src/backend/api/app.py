@@ -100,7 +100,7 @@ def get_character_ids(destiny_id: int):
 def get_activity_ids_by_mode(mode: str):
     query = f"SELECT activity_id FROM `Activity` WHERE type = {mode}"
     result = db_conn.execute(query)
-    if result:
+    if result and not isinstance(result, bool):
         for i in range(len(result)):
             result[i] = result[i][0]
         
@@ -337,7 +337,7 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
             for act_id in mult_activity_ids:
                 query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_id = {act_id}"
                 result = db_conn.execute(query)
-                if result:
+                if result and not isinstance(result, bool):
                     for item in result:
                         single_resp = convert_to_dict(activity_stats_cols, item)
                         if single_resp:
@@ -350,7 +350,7 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
         elif activity_id:
             query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_id = {activity_id}"
             result = db_conn.execute(query)
-            if result:
+            if result and not isinstance(result, bool):
                 for item in result:
                     single_resp = convert_to_dict(activity_stats_cols, item)
                     if single_resp:
