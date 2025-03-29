@@ -222,11 +222,11 @@ class EquippedWeaponData(BungieData):
             try:
                 self.__data["slot_type"] = WEAPON_SLOT_TYPE(self._manifest_data["equippingBlock"]["equipmentSlotTypeHash"]).name
                 if self.__weapon.data["weapon_type"] == "FUSION_RIFLE" or self.__weapon.data["weapon_type"] == "LINEAR_FUSION_RIFLE":
-                    self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2961396640"]["value"]}ms"
+                    self.__data["main_stat"] = f"{self._manifest_data['stats']['stats']['2961396640']['value']}ms"
                 elif self.__weapon.data["weapon_type"] == "SWORD":
-                    self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["2837207746"]["value"]} swing speed"
+                    self.__data["main_stat"] = f"{self._manifest_data['stats']['stats']['2837207746']['value']} swing speed"
                 else:
-                    self.__data["main_stat"] = f"{self._manifest_data["stats"]["stats"]["4284893193"]["value"]}rpm"
+                    self.__data["main_stat"] = f"{self._manifest_data['stats']['stats']['4284893193']['value']}rpm"
                 return
             except KeyError:
                 pass

@@ -2,8 +2,8 @@ uv
 python-dotenv
 requests
 mysql-connector-python
-urllib
+urllib3
 pytest
 pytest-cov
 fastapi
-uivcorn
+uvicorn
