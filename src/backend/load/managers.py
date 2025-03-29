@@ -331,7 +331,7 @@ class DatabaseManager:
                 return stat
 
         if bng_char_id:
-            result = self.__control.select_rows("Activity_Stats", ["*"], {"instance_id": instance.instance_id})
+            result = self.__control.select_rows("Activity_Stats", ["*"], {"instance_id": instance.instance_id, "bng_character_id": bng_char_id})
             if result:
                 return False
 
