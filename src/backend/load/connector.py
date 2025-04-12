@@ -4,14 +4,24 @@ class SQLConnector:
     """
     Utility class that creates a MySQL database connection. Allows for executing queries, as well as commits and rollbacks
     """
-    def __init__(self, db_name: str, port: int, user: str="root", password: str="pass") -> None:
-        self.db = connector.connect(
-            host="localhost",
-            user=user,
-            password=password,
-            database=db_name,
-            port = port
-        )
+    def __init__(self, db_name: str, port: int, user: str="root", password: str="pass", host: str="localhost", unix: str="") -> None:
+        if unix:
+            self.db = connector.connect(
+                host=host,
+                user=user,
+                password=password,
+                database=db_name,
+                port = port,
+                unix_socket=unix
+            )
+        else:
+            self.db = connector.connect(
+                host=host,
+                user=user,
+                password=password,
+                database=db_name,
+                port = port
+            )
 
     def execute(self, query: str, params=None):
         cursor = self.db.cursor(buffered=True)

@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: d2-sandbox-api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: d2-stats       
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: pass
+      DB_NAME: signature
+    networks:
+      - d2-sandbox-network     
+
+networks:
+  d2-sandbox-network:
+    external: true            
