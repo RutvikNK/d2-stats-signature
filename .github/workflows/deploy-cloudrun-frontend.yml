@@ -3,7 +3,7 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - feature/104-react-init
+      - feature/**
 
 jobs:
   build-and-deploy:
