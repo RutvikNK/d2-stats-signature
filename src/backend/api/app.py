@@ -3,7 +3,7 @@ import psutil
 import os
 from fastapi import FastAPI, Response, status
 from time import sleep
-
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.data.bng_data import ActivityStatsData
 from backend.data.bng_types import ACTIVITY_TYPE
@@ -22,8 +22,8 @@ from backend.load.executor import DatabaseExecutor
 
 host = os.environ.get("DB_HOST", "d2-stats")
 port = int(os.environ.get("DB_PORT", 3306))
-unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/cloudsql/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
-db_conn = SQLConnector("signature", port, host=host, unix=unix_socket)
+# unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
+db_conn = SQLConnector("signature", port, host=host)
 db_exec = DatabaseExecutor(db_conn)
 
 activities = [type.value for type in ACTIVITY_TYPE]
@@ -37,8 +37,6 @@ character_manager = DatabaseCharacterManager(db_exec)
 equip_manager = EquipmentManager(db_exec, weapon_manager, armor_manager)
 
 db_manager = DatabaseManager(db_exec, activity_manager, weapon_manager, character_manager, player_manager, equip_manager)
-
-app = FastAPI()
 
 player_cols = [
     "player_id", 
@@ -79,6 +77,15 @@ activity_stats_cols = [
     "precision_kills_percent", 
     "character_class"
 ]
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 def convert_to_dict(cols: list, result):
     if len(cols) == len(result):
