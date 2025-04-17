@@ -34,6 +34,12 @@ output/
 *.manifest
 *.spec
 
+# Deployment files
+# Only for containerizing the app for deployment
+*.sql
+Dockerfile
+docker-compose.yml
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
