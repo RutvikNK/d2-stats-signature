@@ -1,0 +1,48 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - feature/104-react-init
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Docker Image to Cloud Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Build and Push Docker Image (amd64)
+        run: |
+          docker buildx create --use --name multi-arch-builder || true
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_IMAGE_NAME }}:latest \
+            --push .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ secrets.GCP_SERVICE_NAME }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_IMAGE_NAME }}:latest \
+            --region us-central1 \
+            --platform managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances=${{ secrets.GCP_SQL_INSTANCE }} \
+            --set-env-vars INSTANCE_CONNECTION_NAME=${{ secrets.GCP_SQL_INSTANCE }}
