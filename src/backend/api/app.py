@@ -78,6 +78,7 @@ activity_stats_cols = [
     "character_class"
 ]
 
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
