@@ -3,7 +3,7 @@ import { UserData, FilterValues, StatsData } from '../types'; // Import types
 // Base URL for the user endpoint
 const API_BASE_URL = import.meta.env.VITE_D2_SANDBOX_API_URL;
 // Define the POST endpoint (Using the same base URL as confirmed)
-const ADD_USER_ENDPOINT = API_BASE_URL;
+const ADD_USER_ENDPOINT = `${API_BASE_URL}/user`;
 
 /**
  * Fetches user data from the API based on Bungie Name.
