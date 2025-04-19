@@ -36,7 +36,10 @@ class SQLConnector:
                 result = cursor.fetchall()
                 if result:
                     return result
-            
+                else:
+                    return False
+
+            print(query)
             print("Query executed successfully\n")
             self.commit()
             return True
