@@ -21,9 +21,9 @@ from backend.load.managers import (
 from backend.load.executor import DatabaseExecutor
 
 host = os.environ.get("DB_HOST", "d2-stats")
-port = int(os.environ.get("DB_PORT", 3306))
-unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
-db_conn = SQLConnector("signature", port, host=host, unix=unix_socket)
+port = int(os.environ.get("DB_PORT", 33061))
+# unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
+db_conn = SQLConnector("signature", port)
 db_exec = DatabaseExecutor(db_conn)
 
 activities = [type.value for type in ACTIVITY_TYPE]
@@ -224,13 +224,15 @@ async def post_new_user(username: str, platform: int, response: Response):
                             
                             instance_list = instance_manager.get_instances()
                             db_manager.add_new_stat_block(instance_list[-1], int(char_id))
-                        
+                        response.status_code = status.HTTP_201_CREATED
                         return new_player.data, 201
                     except Exception as e:
                         print(f"Error: {e}")
             else:
+                response.status_code = status.HTTP_404_NOT_FOUND
                 return {"Error": f"Could not find character IDs for {username}"}
         else:
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return {"Error": f"Could not POST new player {username} with account on platform {platform}"}
 
 @app.patch("/d2/user/{member_id}")
