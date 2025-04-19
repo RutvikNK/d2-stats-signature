@@ -22,8 +22,8 @@ from backend.load.executor import DatabaseExecutor
 
 host = os.environ.get("DB_HOST", "d2-stats")
 port = int(os.environ.get("DB_PORT", 3306))
-# unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
-db_conn = SQLConnector("signature", port, host=host)
+unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
+db_conn = SQLConnector("signature", port, host=host, unix=unix_socket)
 db_exec = DatabaseExecutor(db_conn)
 
 activities = [type.value for type in ACTIVITY_TYPE]
