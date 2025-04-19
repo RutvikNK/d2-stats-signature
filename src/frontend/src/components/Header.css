@@ -1,0 +1,11 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.site-title {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+}
