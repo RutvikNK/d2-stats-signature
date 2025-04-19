@@ -178,7 +178,7 @@ def verify_date_format(date: str) -> bool:
 @app.get("/d2/user/{bng_username}")
 async def get_user_by_id(bng_username: str, response: Response):
     if verify_bng_username(bng_username):
-        query = f"SELECT * FROM `Player` WHERE bng_username = {bng_username}"
+        query = f"SELECT * FROM `Player` WHERE bng_username = '{bng_username}'"
         result = db_conn.execute(query)
         if result:
             resp = convert_to_dict(player_cols, result[0])
