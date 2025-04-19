@@ -175,21 +175,27 @@ def verify_date_format(date: str) -> bool:
     
     return True
 
-@app.get("/d2/user/{player_id}")
-async def get_user_by_id(player_id: int):
-    query = f"SELECT * FROM `Player` WHERE player_id = {player_id}"
-    result = db_conn.execute(query)
-    if result:
-        resp = convert_to_dict(player_cols, result[0])
-        if resp:
-            return resp, 200
-        else:
-            return {"Error": "Error parsing player data"}, 500
-    
-    return {"Error": "Player not found"}, 404
+@app.get("/d2/user/{bng_username}")
+async def get_user_by_id(bng_username: str, response: Response):
+    if verify_bng_username(bng_username):
+        query = f"SELECT * FROM `Player` WHERE bng_username = {bng_username}"
+        result = db_conn.execute(query)
+        if result:
+            resp = convert_to_dict(player_cols, result[0])
+            if resp:
+                response.status_code = status.HTTP_200_OK
+                return resp
+            else:
+                response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+                return {"Error": "Error parsing player data"}, 500
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"Error": "Player not found"}, 404
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return {"Error": "Invalid username format"}, 400
 
 @app.post("/d2/user")
-async def post_new_user(username: str, platform: int):
+async def post_new_user(username: str, platform: int, response: Response):
     if verify_platform(platform) and verify_bng_username(username):
         new_player = player_manager.add_player_by_username(username, platform)
         if new_player:
@@ -242,24 +248,28 @@ async def patch_user_last_played(member_id: int, platform: int, response: Respon
         return {"Error": f"Invalid platform {platform} requested"}, 400
 
 @app.get("/d2/weapon/{weapon_id}")
-async def get_weapon_by_id(weapon_id: int):
+async def get_weapon_by_id(weapon_id: int, response: Response):
     query = f"SELECT * FROM `Weapon` WHERE weapon_id = {weapon_id}"
     result = db_conn.execute(query)
     if result:
         resp = convert_to_dict(weapon_cols, result[0])
         if resp:
+            response.status_code = status.HTTP_200_OK
             return resp, 200
         else:
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return {"Error": "Error parsing weapon data"}, 500
     
     return {"Error": "Weapon not found"}, 404
 
 @app.post("/d2/weapon/")
-async def post_weapon(weapon_id: int):
+async def post_weapon(weapon_id: int, response: Response):
     new_weapon = weapon_manager.add_new_weapon(weapon_id)
     if new_weapon:
+        response.status_code = status.HTTP_201_CREATED
         return new_weapon.data, 201
     else:
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"Error": f"Error posting new weapon {weapon_id}"}, 500
 
 @app.put("/d2/weapon/{weapon_id}")
@@ -273,24 +283,28 @@ async def put_weapon(weapon_id: int, response: Response):
         return {"Error": f"Weapon {weapon_id} not found"}, 404
 
 @app.get("/d2/armor/{armor_id}")
-async def get_armor_by_id(armor_id: int):
+async def get_armor_by_id(armor_id: int, response: Response):
     query = f"SELECT * FROM `Armor` WHERE armor_id = {armor_id}"
     result = db_conn.execute(query)
     if result:
         resp = convert_to_dict(armor_cols, result[0])
         if resp:
+            response.status_code = status.HTTP_200_OK
             return resp, 200
         else:
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return {"Error": "Error parsing armor data"}, 500
     
     return {"Error": "Armor not found"}, 404
 
 @app.post("/d2/armor/")
-async def post_armor(armor_id: int):
+async def post_armor(armor_id: int, response: Response):
     new_armor = armor_manager.add_new_armor(armor_id)
     if new_armor:
+        response.status_code = status.HTTP_201_CREATED
         return new_armor.data, 201
     else:
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"Error": f"Error posting new armor {armor_id}"}, 500
 
 @app.put("/d2/armor/{armor_id}")
@@ -304,8 +318,9 @@ async def put_armor(armor_id: int, response: Response):
         return {"Error": f"Armor {armor_id} not found"}, 404
 
 @app.get("/d2/user/activity_stats/{destiny_id}/")
-async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, character_id: int=0, mode: str="", count: int=0):
+async def get_activity_stats_by_id(destiny_id: int, response: Response, activity_id: int=0, character_id: int=0, mode: str="", count: int=0):
     if mode and activity_id:
+        response.status_code = status.HTTP_400_BAD_REQUEST
         return {"Error": "Incompatible filters requested"}, 400
     
     mult_activity_ids = []
@@ -314,11 +329,13 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
     if character_id == 0:
         mult_character_ids = get_character_ids(destiny_id)
         if not mult_character_ids:
+            response.status_code = status.HTTP_404_NOT_FOUND
             return {"Error": f"No characters found for the given user {destiny_id}"}, 404
 
     if activity_id == 0 and mode:
         mult_activity_ids = get_activity_ids_by_mode(mode)
         if not mult_activity_ids:
+            response.status_code = status.HTTP_404_NOT_FOUND
             return {"Error": f"No matching activities found for the given mode {mode}"}, 404
 
     if mult_character_ids:
@@ -339,8 +356,10 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
                     mult_resp.append(single_resp)
         
         if count > 0  and mult_resp:
+            response.status_code = status.HTTP_200_OK
             return mult_resp[:count], 200
         elif mult_resp:
+            response.status_code = status.HTTP_200_OK
             return mult_resp, 200
     elif character_id:
         mult_resp = []
@@ -355,8 +374,10 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
                             mult_resp.append(single_resp)
             else:
                 if count > 0  and mult_resp:
+                    response.status_code = status.HTTP_200_OK
                     return mult_resp[:count], 200
                 elif mult_resp:
+                    response.status_code = status.HTTP_200_OK
                     return mult_resp, 200
         elif activity_id:
             query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_id = {activity_id}"
@@ -365,18 +386,23 @@ async def get_activity_stats_by_id(destiny_id: int, activity_id: int=0, characte
                 for item in result:
                     single_resp = convert_to_dict(activity_stats_cols, item)
                     if single_resp:
+                        response.status_code = status.HTTP_200_OK
                         return single_resp, 200
         else:
             act_resps = get_mult_activity_stats(character_id)
             for single_resp in act_resps:
                 mult_resp.append(single_resp)
             if count > 0 and mult_resp:
+                response.status_code = status.HTTP_200_OK
                 return mult_resp[:count], 200
             elif mult_resp:
+                response.status_code = status.HTTP_200_OK
                 return mult_resp, 200
     else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
         return {"Error": "Account characters not found"}, 404
     
+    response.status_code = status.HTTP_404_NOT_FOUND
     return "Activity stats not found", 404
 
 @app.post("/d2/user/activity_stats")
