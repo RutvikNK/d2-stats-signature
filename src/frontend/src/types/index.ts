@@ -1,4 +1,3 @@
-/* Structure of the user data object returned by the /d2/user/{bng_username} API endpoint */
 export interface UserData {
     player_id: number;
     destiny_id: number; 
@@ -10,27 +9,37 @@ export interface UserData {
     character_ids: string; // String representation of a list of strings
 }
 
-/* Structure for the filter values collected from the Filters component */
+export interface UserData {
+    player_id: number; // Keep for potential future use, even if not displayed
+    destiny_id: number; // Keep for potential future use
+    bng_id: number;
+    bng_username: string;
+    date_created: string;
+    date_last_played: string;
+    platform: string;
+    character_ids: string; // String representation of a list of strings
+}
+
 export interface FilterValues {
-    activityType: string;
-    activityName: string;
-    weaponFilter: string;
-    armorFilter: string;
+    mode?: number | string; 
+    activityName?: string; 
+    characterId?: string; // Selected character ID (string from parsed list
+    count?: number; // Optional count
 }
 
-/**
- * Placeholder structure for the data expected in the Gear/Activity Stats section.
- * Replace this with the actual structure returned by your stats API endpoint.
- */
-export interface StatsData {
-    message: string;
-    filtersUsed: FilterValues;
-    timestamp: string;
-    // Add actual stats fields here, e.g., kills: number, efficiency: number, etc.
+export interface ActivityStatEntry {
+    character_id: number; 
+    activity_id: number; 
+    instance_id: number; 
+    activity_name: string;
+    weapon_id: number;
+    weapon_name: string;
+    kills: number;
+    precision_kills: number;
+    precision_kills_percent: number;
+    character_class: string;
 }
 
-/**
- * Defines the expected structure of the raw API response array.
- */
+export type StatsData = ActivityStatEntry[];
 export type GetUserApiResponse = [UserData, number];
 
