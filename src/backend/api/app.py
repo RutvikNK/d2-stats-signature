@@ -109,7 +109,7 @@ def get_character_ids(destiny_id: int):
         return None
 
 def get_activity_ids_by_mode(mode: str):
-    query = f"SELECT activity_id FROM `Activity` WHERE type = {mode}"
+    query = f"SELECT activity_id FROM `Activity` WHERE type = '{mode}'"
     result = db_conn.execute(query)
     if result and not isinstance(result, bool):
         for i in range(len(result)):
@@ -119,13 +119,16 @@ def get_activity_ids_by_mode(mode: str):
     else:
         return None
 
-def get_mult_activity_stats(char_id, act_id=0):
+def get_mult_activity_stats(char_id, act_id=0, act_name: str=""):
     mult_resp = []
     if act_id:
         query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {char_id} AND activity_id = {act_id}"
+    elif act_name:
+        query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {char_id} AND activity_name = '{act_name}'"
     else:
         query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {char_id}"
     
+    print(query)
     result = db_conn.execute(query)
     if result:
         for item in result:
@@ -320,8 +323,8 @@ async def put_armor(armor_id: int, response: Response):
         return {"Error": f"Armor {armor_id} not found"}, 404
 
 @app.get("/d2/user/activity_stats/{destiny_id}/")
-async def get_activity_stats_by_id(destiny_id: int, response: Response, activity_id: int=0, character_id: int=0, mode: str="", count: int=0):
-    if mode and activity_id:
+async def get_activity_stats_by_id(destiny_id: int, response: Response, activity_name: str="", character_id: int=0, mode: str="", count: int=0):
+    if mode and activity_name:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return {"Error": "Incompatible filters requested"}, 400
     
@@ -334,7 +337,7 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
             response.status_code = status.HTTP_404_NOT_FOUND
             return {"Error": f"No characters found for the given user {destiny_id}"}, 404
 
-    if activity_id == 0 and mode:
+    if not activity_name and mode:
         mult_activity_ids = get_activity_ids_by_mode(mode)
         if not mult_activity_ids:
             response.status_code = status.HTTP_404_NOT_FOUND
@@ -345,11 +348,11 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
         for char_id in mult_character_ids:
             if mult_activity_ids:
                 for act_id in mult_activity_ids:
-                    act_resps = get_mult_activity_stats(char_id, act_id)
+                    act_resps = get_mult_activity_stats(char_id, act_id=act_id)
                     for single_resp in act_resps:
                         mult_resp.append(single_resp)
-            elif activity_id:
-                act_resps = get_mult_activity_stats(char_id, activity_id)
+            elif activity_name:
+                act_resps = get_mult_activity_stats(char_id, act_name=activity_name)
                 for single_resp in act_resps:
                     mult_resp.append(single_resp)
             else:
@@ -367,7 +370,7 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
         mult_resp = []
         if mult_activity_ids:
             for act_id in mult_activity_ids:
-                query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_id = {act_id}"
+                query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = {act_id}"
                 result = db_conn.execute(query)
                 if result and not isinstance(result, bool):
                     for item in result:
@@ -381,8 +384,8 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
                 elif mult_resp:
                     response.status_code = status.HTTP_200_OK
                     return mult_resp, 200
-        elif activity_id:
-            query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_id = {activity_id}"
+        elif activity_name:
+            query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = '{activity_name}'"
             result = db_conn.execute(query)
             if result and not isinstance(result, bool):
                 for item in result:
