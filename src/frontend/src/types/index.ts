@@ -21,7 +21,7 @@ export interface UserData {
 }
 
 export interface FilterValues {
-    mode?: number | string; 
+    mode?: string; 
     activityName?: string; 
     characterId?: string; // Selected character ID (string from parsed list
     count?: number; // Optional count

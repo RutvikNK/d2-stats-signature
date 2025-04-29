@@ -1,11 +1,12 @@
-import { UserData, FilterValues, StatsData } from '../types'; // Import types
+import { UserData, FilterValues, StatsData, ActivityStatEntry } from '../types'; // Import types
 
 // Base URL for the user endpoint
 const API_BASE_URL = import.meta.env.VITE_D2_SANDBOX_API_URL;
 const USER_ENDPOINT_BASE = `${API_BASE_URL?.replace(/\/$/, '')}/user`;
-const ADD_USER_ENDPOINT = `${USER_ENDPOINT_BASE}/`; // Same URL as GET
+const ADD_USER_ENDPOINT = USER_ENDPOINT_BASE; // Same URL as GET
 const ACTIVITY_STATS_ENDPOINT = `${USER_ENDPOINT_BASE}/activity_stats`; // GET /user/activity_stats
 
+type ActivityStatsApiResponse = [ActivityStatEntry[], number]; // [ array_of_stats, status_code ]
 
 /**
  * Fetches user data from the API based on Bungie Name.
@@ -67,23 +68,18 @@ export async function fetchUserData(bngUsername: string): Promise<UserData> {
  * @throws {Error} - Throws an error if the POST request fails.
  */
 export async function addUser(bngUsername: string, platform: number): Promise<void> {
-    const apiUrl = ADD_USER_ENDPOINT;
-    console.log("Calling POST API:", apiUrl, "for user:", bngUsername, "platform:", platform);
+    // --- Construct URL with Query Parameters ---
+    const params = new URLSearchParams();
+    params.append('username', bngUsername);
+    params.append('platform', platform.toString()); // Convert platform number to string for query param
 
-    // Construct the request body including platform
-    const requestBody = JSON.stringify({
-        bng_username: bngUsername,
-        platform: platform // Include platform integer
-    });
+    // Append parameters to the base POST endpoint URL
+    const apiUrl = `${ADD_USER_ENDPOINT}?${params}`;
+    console.log("Calling POST API with Query Params:", apiUrl);
 
     // Perform the POST request
     const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            // Add other headers like Authorization if required by your API
-        },
-        body: requestBody,
     });
 
     // Check if the POST request was successful
@@ -110,75 +106,86 @@ export async function addUser(bngUsername: string, platform: number): Promise<vo
 
 
 /**
- * Fetches activity stats based on selected filters.
- * GET /user/activity_stats?character_id=...&mode=...&count=... (or &activity_id=...)
- * @param {FilterValues} filters - Object containing filter values like characterId, mode, activityName.
- * @returns {Promise<StatsData>} - A promise resolving with an array of activity stat entries (StatsData).
- * @throws {Error} - Throws on network error, non-2xx status, parse error, or missing required filters.
+ * Fetches activity stats based on selected filters and player ID.
+ * Expects API response format: [ ActivityStatEntry[], status_code ]
  */
-export async function fetchGearActivityStats(filters: FilterValues, playerId: number): Promise<StatsData> {
+export async function fetchGearActivityStats(filters: FilterValues, playerId: number): Promise<StatsData> { // Return type is still StatsData (ActivityStatEntry[])
     if (!ACTIVITY_STATS_ENDPOINT) {
         throw new Error("Activity Stats API Endpoint is not configured.");
     }
-    // Ensure the required characterId filter is present
     if (!filters.characterId) {
         throw new Error("Character ID is required to fetch activity stats.");
     }
-
-    // --- Construct Query Parameters ---
-    const params = new URLSearchParams();
-
-    // Add character_id (mandatory)
-    params.append('character_id', filters.characterId);
-
-    // Add mode OR activity_id (mutually exclusive as handled by Filters component)
-    if (filters.mode) {
-        params.append('mode', filters.mode.toString()); // Ensure mode is sent as a string
-    } else if (filters.activityName) {
-        // Send the activity name; backend is expected to convert it to an ID
-        params.append('activity_id', filters.activityName);
+    if (playerId == null) {
+        throw new Error("Player ID is required to fetch activity stats.");
     }
 
-    // Add count (optional, using a default value if not provided in filters)
-    const count = filters.count || 25; // Default to 25 entries if not specified
+    const params = new URLSearchParams();
+    params.append('player_id', playerId.toString());
+    params.append('character_id', filters.characterId);
+    if (filters.mode) { params.append('mode', filters.mode); } // Send string label
+    else if (filters.activityName) { params.append('activity_id', filters.activityName); }
+    const count = filters.count || 25;
     params.append('count', count.toString());
 
-    // Construct the full API URL with query parameters
     const apiUrl = `${ACTIVITY_STATS_ENDPOINT}/${playerId}/?${params.toString()}`;
     console.log("Calling GET Activity Stats API:", apiUrl);
 
-    // --- Make the API Request ---
-    const response = await fetch(apiUrl); // Default method is GET
+    const response = await fetch(apiUrl);
 
-    // Handle non-successful HTTP responses
     if (!response.ok) {
+        // Handle HTTP errors (non-2xx status codes)
         let errorData: { message?: string } = {};
         let errorMessage = `Failed to fetch activity stats. Status: ${response.status}`;
-        try {
-            errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-             errorMessage = response.statusText ? `${response.statusText} (Status: ${response.status})` : errorMessage;
-        }
+        try { errorData = await response.json(); errorMessage = errorData.message || errorMessage; } catch (e) { errorMessage = response.statusText ? `${response.statusText} (Status: ${response.status})` : errorMessage; }
         console.error("Fetch Activity Stats API Error:", errorData);
-        throw new Error(errorMessage); // Throw error to be caught by the caller
+        throw new Error(errorMessage);
     }
 
-    // Handle successful response
+    // Handle successful HTTP response (2xx)
     try {
-        // Parse the response body, expecting an array of ActivityStatEntry objects (StatsData)
-        const statsData: StatsData = await response.json();
-        console.log("Activity Stats API Success Response (Parsed):", statsData);
+        // Parse the JSON, expecting the [ data_array, status_code ] structure
+        const apiResponse: unknown = await response.json();
+        console.log("Activity Stats API Success Response (Raw Parsed):", JSON.stringify(apiResponse, null, 2));
 
-        // Optional but recommended: Validate the structure of the parsed data
-        if (!Array.isArray(statsData)) {
-            console.error("Parsed activity stats data is not an array:", statsData);
-            throw new Error("Unexpected format for activity stats data.");
-            // You could add more detailed validation here if needed (e.g., check properties of first item)
+        // --- Type Guard to check the structure ---
+        const isStatsApiResponse = (d: unknown): d is ActivityStatsApiResponse => {
+            return (
+                Array.isArray(d) &&
+                d.length === 2 &&
+                Array.isArray(d[0]) && // Check if first element is an array
+                typeof d[1] === 'number' // Check if second element is a number (status code)
+            );
+        };
+
+        if (isStatsApiResponse(apiResponse)) {
+            const [statsArray, statusCode] = apiResponse; // Destructure the validated response
+
+            // Optionally check the status code within the response body if needed
+            if (statusCode >= 200 && statusCode < 300) {
+                 console.log("Extracted stats array:", JSON.stringify(statsArray, null, 2));
+                 // Validate the inner array elements (optional but good practice)
+                 if (statsArray.every(item => typeof item === 'object' && item !== null && 'activity_name' in item)) {
+                    return statsArray as StatsData; // Return the inner array containing stats objects
+                 } else {
+                     console.error("Inner array elements do not match expected ActivityStatEntry structure.");
+                     throw new Error("Unexpected structure within stats data array.");
+                 }
+            } else {
+                // Handle cases where API returns 2xx HTTP status but error code in body
+                console.error(`API returned status code ${statusCode} in response body.`);
+                // Try to get an error message from the first element if it's not the stats array
+                const errorMessage = (statsArray as any)?.message || `API returned status ${statusCode}`;
+                throw new Error(errorMessage);
+            }
+        } else {
+            // If the parsed JSON doesn't match the expected [ data_array, status_code ] structure
+            console.error("Parsed activity stats data is not the expected [data, statusCode] array structure:", apiResponse);
+            throw new Error("Unexpected API response format for activity stats.");
         }
 
-        return statsData; // Return the successfully parsed array of stats
-    } catch (parseError: unknown) { // Handle errors during JSON parsing
+    } catch (parseError: unknown) {
+        // Handle errors during JSON parsing itself
         console.error("Failed to parse successful activity stats response:", parseError);
         const message = (parseError instanceof Error) ? parseError.message : "Unknown parse error";
         throw new Error(`Failed to parse activity stats response: ${message}`);

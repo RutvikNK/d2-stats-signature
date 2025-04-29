@@ -44,7 +44,7 @@ const activityModeOptions = [
 
 const Filters: React.FC<FiltersProps> = ({ userData, onApplyFilters, isFetchingStats }) => {
     // State variables for the filter inputs
-    const [selectedMode, setSelectedMode] = useState<string>(''); // Store mode ID as string from select
+    const [selectedModeValue, setSelectedModeValue] = useState<string>(''); // Store mode VALUE (number as string) from select
     const [activityName, setActivityName] = useState<string>(''); // Store specific activity name input
     const [selectedCharacterId, setSelectedCharacterId] = useState<string>(''); // Store selected character ID
     const [count, setCount] = useState<string>('25'); // Optional: State for count input if re-enabled
@@ -73,10 +73,10 @@ const Filters: React.FC<FiltersProps> = ({ userData, onApplyFilters, isFetchingS
 
     // Event handler for Activity Type (Mode) dropdown change
     const handleModeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newMode = event.target.value;
-        setSelectedMode(newMode);
+        const newModeValue = event.target.value;
+        setSelectedModeValue(newModeValue); // Store the selected integer value (as string)
         // Clear activity name input if a mode is selected (enforce mutual exclusivity)
-        if (newMode) {
+        if (newModeValue) {
             setActivityName('');
         }
     };
@@ -87,7 +87,7 @@ const Filters: React.FC<FiltersProps> = ({ userData, onApplyFilters, isFetchingS
         setActivityName(newName);
         // Clear mode selection if an activity name is typed (enforce mutual exclusivity)
         if (newName) {
-            setSelectedMode('');
+            setSelectedModeValue('');
         }
     };
 
@@ -110,12 +110,24 @@ const Filters: React.FC<FiltersProps> = ({ userData, onApplyFilters, isFetchingS
             count: parseInt(count, 10) || 25, // Uncomment and adjust if count input is used
         };
 
-        // Add mode or activityName (only one should be active due to handlers above)
-        if (selectedMode) {
-            filters.mode = selectedMode; // Pass mode ID (as string or number based on API needs)
+        // --- Find the label for the selected mode value ---
+        if (selectedModeValue) {
+            // Find the option object that matches the selected value
+            const selectedOption = activityModeOptions.find(opt => opt.value.toString() === selectedModeValue);
+            if (selectedOption) {
+                // Assign the LABEL (string name) to the mode property in the filters object
+                filters.mode = selectedOption.label;
+                console.log(`Selected Mode Value: ${selectedModeValue}, Sending Label: ${selectedOption.label}`); // For debugging
+            } else {
+                 // Handle case where the selected value doesn't match any option (shouldn't normally happen)
+                 console.warn(`Could not find label for selected mode value: ${selectedModeValue}`);
+                 // Decide how to handle this - maybe send nothing, or send the value? Sending nothing for now.
+            }
         } else if (activityName.trim()) {
-            filters.activityName = activityName.trim(); // Pass activity name string
+            // If activity name input is used instead of mode dropdown, assign it directly
+            filters.activityName = activityName.trim();
         }
+
 
         // Call the callback function passed from the parent (ResultsPage)
         onApplyFilters(filters);
@@ -147,7 +159,7 @@ const Filters: React.FC<FiltersProps> = ({ userData, onApplyFilters, isFetchingS
             <label htmlFor="activityTypeSelect">Activity Type (Mode):</label>
             <select
                 id="activityTypeSelect"
-                value={selectedMode}
+                value={selectedModeValue}
                 onChange={handleModeChange}
                 // Disable if loading stats OR if a specific activity name is entered
                 disabled={isFetchingStats || !!activityName}
@@ -167,7 +179,7 @@ const Filters: React.FC<FiltersProps> = ({ userData, onApplyFilters, isFetchingS
                 value={activityName}
                 onChange={handleActivityNameChange}
                 // Disable if loading stats OR if an activity type (mode) is selected
-                disabled={isFetchingStats || !!selectedMode}
+                disabled={isFetchingStats || !!selectedModeValue}
             />
 
             {/* Count Input (Optional - currently commented out) */}
