@@ -23,7 +23,12 @@ from backend.load.executor import DatabaseExecutor
 host = os.environ.get("DB_HOST", "d2-stats")
 port = int(os.environ.get("DB_PORT", 3306))
 unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
-db_conn = SQLConnector("signature", port, host=host, unix=unix_socket)
+db_conn = SQLConnector(
+    "signature", 
+    port,
+    host=host,
+    unix=unix_socket
+)
 db_exec = DatabaseExecutor(db_conn)
 
 activities = [type.value for type in ACTIVITY_TYPE]
@@ -97,8 +102,11 @@ def convert_to_dict(cols: list, result):
     else:
         return None
     
-def get_character_ids(destiny_id: int):
-    query = f"SELECT character_id FROM `Character` WHERE player_id = {destiny_id}"
+def get_character_ids(destiny_id: int, bng_char_id: int=0):
+    if bng_char_id:
+        query = f"SELECT character_id FROM `Character` WHERE player_id = {destiny_id} AND bng_character_id = {bng_char_id}"
+    else:
+        query = f"SELECT character_id FROM `Character` WHERE player_id = {destiny_id}"
     result = db_conn.execute(query)
     if result:
         for i in range(len(result)):
@@ -367,10 +375,11 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
             response.status_code = status.HTTP_200_OK
             return mult_resp, 200
     elif character_id:
+        character_id = get_character_ids(destiny_id, character_id)[0]
         mult_resp = []
         if mult_activity_ids:
             for act_id in mult_activity_ids:
-                query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = {act_id}"
+                query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_id = {act_id}"
                 result = db_conn.execute(query)
                 if result and not isinstance(result, bool):
                     for item in result:
