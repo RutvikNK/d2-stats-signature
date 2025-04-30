@@ -275,7 +275,7 @@ async def get_weapon_by_id(weapon_id: int, response: Response):
     
     return {"Error": "Weapon not found"}, 404
 
-@app.post("/d2/weapon/")
+@app.post("/d2/weapon")
 async def post_weapon(weapon_id: int, response: Response):
     new_weapon = weapon_manager.add_new_weapon(weapon_id)
     if new_weapon:
@@ -310,7 +310,7 @@ async def get_armor_by_id(armor_id: int, response: Response):
     
     return {"Error": "Armor not found"}, 404
 
-@app.post("/d2/armor/")
+@app.post("/d2/armor")
 async def post_armor(armor_id: int, response: Response):
     new_armor = armor_manager.add_new_armor(armor_id)
     if new_armor:
@@ -330,7 +330,7 @@ async def put_armor(armor_id: int, response: Response):
         response.status_code = status.HTTP_404_NOT_FOUND
         return {"Error": f"Armor {armor_id} not found"}, 404
 
-@app.get("/d2/user/activity_stats/{destiny_id}/")
+@app.get("/d2/user/activity_stats/{destiny_id}")
 async def get_activity_stats_by_id(destiny_id: int, response: Response, activity_name: str="", character_id: int=0, mode: str="", count: int=0):
     if mode and activity_name:
         response.status_code = status.HTTP_400_BAD_REQUEST
