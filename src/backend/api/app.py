@@ -275,7 +275,7 @@ async def get_weapon_by_id(weapon_id: int, response: Response):
     
     return {"Error": "Weapon not found"}, 404
 
-@app.post("/d2/weapon/")
+@app.post("/d2/weapon")
 async def post_weapon(weapon_id: int, response: Response):
     new_weapon = weapon_manager.add_new_weapon(weapon_id)
     if new_weapon:
@@ -310,7 +310,7 @@ async def get_armor_by_id(armor_id: int, response: Response):
     
     return {"Error": "Armor not found"}, 404
 
-@app.post("/d2/armor/")
+@app.post("/d2/armor")
 async def post_armor(armor_id: int, response: Response):
     new_armor = armor_manager.add_new_armor(armor_id)
     if new_armor:
@@ -330,7 +330,7 @@ async def put_armor(armor_id: int, response: Response):
         response.status_code = status.HTTP_404_NOT_FOUND
         return {"Error": f"Armor {armor_id} not found"}, 404
 
-@app.get("/d2/user/activity_stats/{destiny_id}/")
+@app.get("/d2/user/activity_stats/{destiny_id}")
 async def get_activity_stats_by_id(destiny_id: int, response: Response, activity_name: str="", character_id: int=0, mode: str="", count: int=0):
     if mode and activity_name:
         response.status_code = status.HTTP_400_BAD_REQUEST
@@ -394,14 +394,18 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
                     response.status_code = status.HTTP_200_OK
                     return mult_resp, 200
         elif activity_name:
-            query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = '{activity_name}'"
+            query = f'SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = "{activity_name}"'
             result = db_conn.execute(query)
             if result and not isinstance(result, bool):
                 for item in result:
                     single_resp = convert_to_dict(activity_stats_cols, item)
-                    if single_resp:
-                        response.status_code = status.HTTP_200_OK
-                        return single_resp, 200
+                    mult_resp.append(single_resp)
+                if count > 0 and mult_resp:
+                    response.status_code = status.HTTP_200_OK
+                    return mult_resp[:count], 200
+                elif mult_resp:
+                    response.status_code = status.HTTP_200_OK
+                    return mult_resp, 200
         else:
             act_resps = get_mult_activity_stats(character_id)
             for single_resp in act_resps:
