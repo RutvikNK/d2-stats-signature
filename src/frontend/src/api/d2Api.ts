@@ -1,9 +1,12 @@
-import { UserData, FilterValues, StatsData } from '../types'; // Import types
+import { UserData, FilterValues, StatsData, ActivityStatEntry } from '../types'; // Import types
 
 // Base URL for the user endpoint
 const API_BASE_URL = import.meta.env.VITE_D2_SANDBOX_API_URL;
-// Define the POST endpoint (Using the same base URL as confirmed)
-const ADD_USER_ENDPOINT = `${API_BASE_URL}/user`;
+const USER_ENDPOINT_BASE = `${API_BASE_URL?.replace(/\/$/, '')}/user`;
+const ADD_USER_ENDPOINT = USER_ENDPOINT_BASE; // Same URL as GET
+const ACTIVITY_STATS_ENDPOINT = `${USER_ENDPOINT_BASE}/activity_stats`; // GET /user/activity_stats
+
+type ActivityStatsApiResponse = [ActivityStatEntry[], number]; // [ array_of_stats, status_code ]
 
 /**
  * Fetches user data from the API based on Bungie Name.
@@ -58,30 +61,25 @@ export async function fetchUserData(bngUsername: string): Promise<UserData> {
 
 /**
  * Attempts to add a new user via a POST request.
- * Requires Bungie Name and Platform ID.
+ * Requires Bungie Username and Platform ID.
  * @param {string} bngUsername - The Bungie Name to add.
  * @param {number} platform - The integer platform ID.
  * @returns {Promise<void>} - Resolves on success, throws an error on failure.
  * @throws {Error} - Throws an error if the POST request fails.
  */
 export async function addUser(bngUsername: string, platform: number): Promise<void> {
-    const apiUrl = ADD_USER_ENDPOINT; // Using same base URL for POST
-    console.log("Calling POST API:", apiUrl, "for user:", bngUsername, "platform:", platform);
+    // --- Construct URL with Query Parameters ---
+    const params = new URLSearchParams();
+    params.append('username', bngUsername);
+    params.append('platform', platform.toString()); // Convert platform number to string for query param
 
-    // Construct the request body including platform
-    const requestBody = JSON.stringify({
-        bng_username: bngUsername,
-        platform: platform // Include platform integer
-    });
+    // Append parameters to the base POST endpoint URL
+    const apiUrl = `${ADD_USER_ENDPOINT}?${params}`;
+    console.log("Calling POST API with Query Params:", apiUrl);
 
     // Perform the POST request
     const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            // Add other headers like Authorization if required by your API
-        },
-        body: requestBody,
     });
 
     // Check if the POST request was successful
@@ -107,33 +105,89 @@ export async function addUser(bngUsername: string, platform: number): Promise<vo
 }
 
 
-// --- Placeholder for future API calls ---
 /**
- * Fetches gear/activity stats based on filters and user info.
- * (This is a placeholder and needs implementation based on your other API endpoints)
- *
- * @param {FilterValues} filters - Object containing filter values (activityType, etc.)
- * @param {object} userInfo - Basic user info (like destiny_id, character_ids_string)
- * @returns {Promise<StatsData>} - A promise that resolves with the stats data.
+ * Fetches activity stats based on selected filters and player ID.
+ * Expects API response format: [ ActivityStatEntry[], status_code ]
  */
-export async function fetchGearActivityStats(
-    filters: FilterValues,
-    userInfo: { destiny_id?: number; character_ids_string?: string } // Type the user info needed
-): Promise<StatsData> { // Return type is StatsData
-    console.log("Fetching stats with filters:", filters, "and user info:", userInfo);
+export async function fetchGearActivityStats(filters: FilterValues, playerId: number): Promise<StatsData> { // Return type is still StatsData (ActivityStatEntry[])
+    if (!ACTIVITY_STATS_ENDPOINT) {
+        throw new Error("Activity Stats API Endpoint is not configured.");
+    }
+    if (!filters.characterId) {
+        throw new Error("Character ID is required to fetch activity stats.");
+    }
+    if (playerId == null) {
+        throw new Error("Player ID is required to fetch activity stats.");
+    }
 
-    // Replace with your actual API call logic using fetch()
-    // Example simulation:
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Construct a StatsData object
-            const simulatedStats: StatsData = {
-                message: "Stats data loaded (simulated)",
-                filtersUsed: filters,
-                timestamp: new Date().toISOString(), // Use ISO string for consistency
-                // Add actual stats fields here based on your StatsData interface
-            };
-            resolve(simulatedStats);
-        }, 1500); // Simulate network delay
-    });
+    const params = new URLSearchParams();
+    params.append('player_id', playerId.toString());
+    params.append('character_id', filters.characterId);
+    if (filters.mode) { params.append('mode', filters.mode); } // Send string label
+    else if (filters.activityName) { params.append('activity_id', filters.activityName); }
+    const count = filters.count || 25;
+    params.append('count', count.toString());
+
+    const apiUrl = `${ACTIVITY_STATS_ENDPOINT}/${playerId}/?${params.toString()}`;
+    console.log("Calling GET Activity Stats API:", apiUrl);
+
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+        // Handle HTTP errors (non-2xx status codes)
+        let errorData: { message?: string } = {};
+        let errorMessage = `Failed to fetch activity stats. Status: ${response.status}`;
+        try { errorData = await response.json(); errorMessage = errorData.message || errorMessage; } catch (e) { errorMessage = response.statusText ? `${response.statusText} (Status: ${response.status})` : errorMessage; }
+        console.error("Fetch Activity Stats API Error:", errorData);
+        throw new Error(errorMessage);
+    }
+
+    // Handle successful HTTP response (2xx)
+    try {
+        // Parse the JSON, expecting the [ data_array, status_code ] structure
+        const apiResponse: unknown = await response.json();
+        console.log("Activity Stats API Success Response (Raw Parsed):", JSON.stringify(apiResponse, null, 2));
+
+        // --- Type Guard to check the structure ---
+        const isStatsApiResponse = (d: unknown): d is ActivityStatsApiResponse => {
+            return (
+                Array.isArray(d) &&
+                d.length === 2 &&
+                Array.isArray(d[0]) && // Check if first element is an array
+                typeof d[1] === 'number' // Check if second element is a number (status code)
+            );
+        };
+
+        if (isStatsApiResponse(apiResponse)) {
+            const [statsArray, statusCode] = apiResponse; // Destructure the validated response
+
+            // Optionally check the status code within the response body if needed
+            if (statusCode >= 200 && statusCode < 300) {
+                 console.log("Extracted stats array:", JSON.stringify(statsArray, null, 2));
+                 // Validate the inner array elements (optional but good practice)
+                 if (statsArray.every(item => typeof item === 'object' && item !== null && 'activity_name' in item)) {
+                    return statsArray as StatsData; // Return the inner array containing stats objects
+                 } else {
+                     console.error("Inner array elements do not match expected ActivityStatEntry structure.");
+                     throw new Error("Unexpected structure within stats data array.");
+                 }
+            } else {
+                // Handle cases where API returns 2xx HTTP status but error code in body
+                console.error(`API returned status code ${statusCode} in response body.`);
+                // Try to get an error message from the first element if it's not the stats array
+                const errorMessage = (statsArray as any)?.message || `API returned status ${statusCode}`;
+                throw new Error(errorMessage);
+            }
+        } else {
+            // If the parsed JSON doesn't match the expected [ data_array, status_code ] structure
+            console.error("Parsed activity stats data is not the expected [data, statusCode] array structure:", apiResponse);
+            throw new Error("Unexpected API response format for activity stats.");
+        }
+
+    } catch (parseError: unknown) {
+        // Handle errors during JSON parsing itself
+        console.error("Failed to parse successful activity stats response:", parseError);
+        const message = (parseError instanceof Error) ? parseError.message : "Unknown parse error";
+        throw new Error(`Failed to parse activity stats response: ${message}`);
+    }
 }
