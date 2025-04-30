@@ -121,10 +121,9 @@ export async function fetchGearActivityStats(filters: FilterValues, playerId: nu
     }
 
     const params = new URLSearchParams();
-    params.append('player_id', playerId.toString());
     params.append('character_id', filters.characterId);
     if (filters.mode) { params.append('mode', filters.mode); } // Send string label
-    else if (filters.activityName) { params.append('activity_id', filters.activityName); }
+    else if (filters.activityName) { params.append('activity_name', filters.activityName); }
     const count = filters.count || 25;
     params.append('count', count.toString());
 

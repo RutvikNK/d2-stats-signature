@@ -21,13 +21,13 @@ from backend.load.managers import (
 from backend.load.executor import DatabaseExecutor
 
 host = os.environ.get("DB_HOST", "d2-stats")
-port = int(os.environ.get("DB_PORT", 3306))
+port = int(os.environ.get("DB_PORT", 33061))
 unix_socket = f"/cloudsql/{os.environ.get('CLOUDSQL_CONNECTION_NAME', '/destiny2-sandbox-tracker-api:us-central1:d2-sandbox-cloudsql')}"
 db_conn = SQLConnector(
     "signature", 
     port,
-    host=host,
-    unix=unix_socket
+    # host=host,
+    # unix=unix_socket
 )
 db_exec = DatabaseExecutor(db_conn)
 
@@ -394,14 +394,18 @@ async def get_activity_stats_by_id(destiny_id: int, response: Response, activity
                     response.status_code = status.HTTP_200_OK
                     return mult_resp, 200
         elif activity_name:
-            query = f"SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = '{activity_name}'"
+            query = f'SELECT * FROM `Activity_Stats` WHERE character_id = {character_id} AND activity_name = "{activity_name}"'
             result = db_conn.execute(query)
             if result and not isinstance(result, bool):
                 for item in result:
                     single_resp = convert_to_dict(activity_stats_cols, item)
-                    if single_resp:
-                        response.status_code = status.HTTP_200_OK
-                        return single_resp, 200
+                    mult_resp.append(single_resp)
+                if count > 0 and mult_resp:
+                    response.status_code = status.HTTP_200_OK
+                    return mult_resp[:count], 200
+                elif mult_resp:
+                    response.status_code = status.HTTP_200_OK
+                    return mult_resp, 200
         else:
             act_resps = get_mult_activity_stats(character_id)
             for single_resp in act_resps:
