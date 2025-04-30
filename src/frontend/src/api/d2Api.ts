@@ -121,14 +121,13 @@ export async function fetchGearActivityStats(filters: FilterValues, playerId: nu
     }
 
     const params = new URLSearchParams();
-    params.append('player_id', playerId.toString());
     params.append('character_id', filters.characterId);
     if (filters.mode) { params.append('mode', filters.mode); } // Send string label
     else if (filters.activityName) { params.append('activity_id', filters.activityName); }
     const count = filters.count || 25;
     params.append('count', count.toString());
 
-    const apiUrl = `${ACTIVITY_STATS_ENDPOINT}/${playerId}/?${params.toString()}`;
+    const apiUrl = `${ACTIVITY_STATS_ENDPOINT}/${playerId}?${params.toString()}`;
     console.log("Calling GET Activity Stats API:", apiUrl);
 
     const response = await fetch(apiUrl);
