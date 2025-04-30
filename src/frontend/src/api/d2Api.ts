@@ -1,6 +1,5 @@
-import { UserData, FilterValues, StatsData, ActivityStatEntry } from '../types'; // Import types
+import { UserData, FilterValues, StatsData, ActivityStatEntry } from '../types';
 
-// Base URL for the user endpoint
 const API_BASE_URL = import.meta.env.VITE_D2_SANDBOX_API_URL;
 const USER_ENDPOINT_BASE = `${API_BASE_URL?.replace(/\/$/, '')}/user`;
 const ADD_USER_ENDPOINT = USER_ENDPOINT_BASE; // Same URL as GET
@@ -10,14 +9,12 @@ type ActivityStatsApiResponse = [ActivityStatEntry[], number]; // [ array_of_sta
 
 /**
  * Fetches user data from the API based on Bungie Name.
- * Assumes the API returns the UserData object directly on success (2xx status).
  * @param {string} bngUsername - The Bungie Name (e.g., Player#1234)
  * @returns {Promise<UserData>} - A promise that resolves with the user data object.
  * @throws {Error} - Throws an error if the fetch fails (non-2xx status) or parsing fails. Includes status code if possible.
  */
 export async function fetchUserData(bngUsername: string): Promise<UserData> {
     const encodedUsername = encodeURIComponent(bngUsername);
-    // Use GET method for fetching
     const apiUrl = `${API_BASE_URL}/user/${encodedUsername}`;
     console.log("Calling GET API:", apiUrl);
 
@@ -34,7 +31,7 @@ export async function fetchUserData(bngUsername: string): Promise<UserData> {
             errorMessage = response.statusText ? `${response.statusText} (Status: ${response.status})` : errorMessage;
         }
         console.error("API Error Response:", errorData);
-         // Throw an error that includes the status code if possible
+        // Throw an error that includes the status code if possible
         const error = new Error(errorMessage);
         (error as any).status = response.status; // Attach status code to error object
         throw error;
@@ -44,7 +41,6 @@ export async function fetchUserData(bngUsername: string): Promise<UserData> {
         const userData: UserData = await response.json(); // Expecting the UserData object directly
         console.log("API Success Response (Parsed UserData):", userData);
 
-        // Optional: Add a simple check for a key property to be more certain
         if (typeof userData === 'object' && userData !== null && 'bng_username' in userData) {
              return userData; // Return the parsed user data object
         } else {
@@ -68,10 +64,10 @@ export async function fetchUserData(bngUsername: string): Promise<UserData> {
  * @throws {Error} - Throws an error if the POST request fails.
  */
 export async function addUser(bngUsername: string, platform: number): Promise<void> {
-    // --- Construct URL with Query Parameters ---
+    // Construct URL with Query Parameters
     const params = new URLSearchParams();
     params.append('username', bngUsername);
-    params.append('platform', platform.toString()); // Convert platform number to string for query param
+    params.append('platform', platform.toString()); 
 
     // Append parameters to the base POST endpoint URL
     const apiUrl = `${ADD_USER_ENDPOINT}?${params}`;
@@ -101,13 +97,11 @@ export async function addUser(bngUsername: string, platform: number): Promise<vo
 
     // If POST is successful, log it and return (resolving the promise)
     console.log("User added successfully via POST:", bngUsername, "Platform:", platform);
-    // return; // Implicitly returns Promise<void>
 }
 
 
 /**
  * Fetches activity stats based on selected filters and player ID.
- * Expects API response format: [ ActivityStatEntry[], status_code ]
  */
 export async function fetchGearActivityStats(filters: FilterValues, playerId: number): Promise<StatsData> { // Return type is still StatsData (ActivityStatEntry[])
     if (!ACTIVITY_STATS_ENDPOINT) {
@@ -121,14 +115,13 @@ export async function fetchGearActivityStats(filters: FilterValues, playerId: nu
     }
 
     const params = new URLSearchParams();
-    params.append('player_id', playerId.toString());
     params.append('character_id', filters.characterId);
     if (filters.mode) { params.append('mode', filters.mode); } // Send string label
-    else if (filters.activityName) { params.append('activity_id', filters.activityName); }
+    else if (filters.activityName) { params.append('activity_name', filters.activityName); }
     const count = filters.count || 25;
     params.append('count', count.toString());
 
-    const apiUrl = `${ACTIVITY_STATS_ENDPOINT}/${playerId}/?${params.toString()}`;
+    const apiUrl = `${ACTIVITY_STATS_ENDPOINT}/${playerId}?${params.toString()}`;
     console.log("Calling GET Activity Stats API:", apiUrl);
 
     const response = await fetch(apiUrl);
