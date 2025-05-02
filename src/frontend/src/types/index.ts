@@ -40,6 +40,17 @@ export interface ActivityStatEntry {
     character_class: string;
 }
 
+export interface CharacterDetails {
+    character_id: number;
+    bng_character_id: string; 
+    class: string; //"WARLOCK", "HUNTER", "TITAN
+    player_id: number;
+    date_last_played: string;
+    // TODO: Add light level, emblem
+}
+
 export type StatsData = ActivityStatEntry[];
 export type GetUserApiResponse = [UserData, number];
+export type CharacterDetailsApiResponse = [CharacterDetails, number];
+export type ActivityStatsApiResponse = [ActivityStatEntry[], number]; // [ array_of_stats, status_code ]
 
