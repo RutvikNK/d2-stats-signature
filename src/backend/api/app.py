@@ -53,6 +53,13 @@ player_cols = [
     "platform", 
     "character_ids"
 ]
+character_cols = [
+    "character_id",
+    "bng_character_id",
+    "class",
+    "player_id",
+    "date_last_played"
+]
 weapon_cols = [
     "weapon_id", 
     "ammo_type", 
@@ -259,6 +266,20 @@ async def patch_user_last_played(member_id: int, platform: int, response: Respon
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return {"Error": f"Invalid platform {platform} requested"}, 400
+
+@app.get("/d2/user/character/{player_id}/{bng_char_id}")
+async def get_user_character_by_id(player_id: int, bng_char_id: int, response: Response):
+    result = db_exec.select_rows("`Character`", ["*"], {"player_id": player_id, "bng_character_id": bng_char_id})
+    if result:
+        resp = convert_to_dict(character_cols, result[0])
+        if resp:
+            response.status_code = status.HTTP_200_OK
+            return resp, 200
+        else:
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            return {"Error": "Error parsing character data"}, 500
+    
+    return {"Error": "Character not found"}, 404
 
 @app.get("/d2/weapon/{weapon_id}")
 async def get_weapon_by_id(weapon_id: int, response: Response):
