@@ -1,11 +1,15 @@
-import { UserData, FilterValues, StatsData, ActivityStatEntry } from '../types';
+import { UserData, FilterValues, StatsData, ActivityStatsApiResponse, CharacterDetails, CharacterDetailsApiResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_D2_SANDBOX_API_URL;
-const USER_ENDPOINT_BASE = `${API_BASE_URL?.replace(/\/$/, '')}/user`;
-const ADD_USER_ENDPOINT = USER_ENDPOINT_BASE; // Same URL as GET
-const ACTIVITY_STATS_ENDPOINT = `${USER_ENDPOINT_BASE}/activity_stats`; // GET /user/activity_stats
 
-type ActivityStatsApiResponse = [ActivityStatEntry[], number]; // [ array_of_stats, status_code ]
+if (!API_BASE_URL) {
+    console.error("CRITICAL ERROR: VITE_API_BASE_URL environment variable is not set!");
+}
+
+const USER_ENDPOINT_BASE = `${API_BASE_URL?.replace(/\/$/, '')}/user`;
+const ADD_USER_ENDPOINT = USER_ENDPOINT_BASE; // Same URL as GET user
+const ACTIVITY_STATS_ENDPOINT = `${USER_ENDPOINT_BASE}/activity_stats`; // GET /user/activity_stats/{player_id}?params
+const CHARACTER_DETAIL_ENDPOINT = `${USER_ENDPOINT_BASE}/character` // // GET /user/character/{player_id}/{bng_character_id}
 
 /**
  * Fetches user data from the API based on Bungie Name.
@@ -99,6 +103,87 @@ export async function addUser(bngUsername: string, platform: number): Promise<vo
     console.log("User added successfully via POST:", bngUsername, "Platform:", platform);
 }
 
+/**
+ * Fetches details for a specific character.
+ * Expects API response format: [ CharacterDetails, status_code ]
+ * GET /user/character/{player_id}/{bng_character_id}
+ */
+export async function fetchCharacterDetails(playerId: number, bngCharacterId: string): Promise<CharacterDetails> { // Return CharacterDetails object
+    if (!CHARACTER_DETAIL_ENDPOINT) {
+        throw new Error("Character Detail API Endpoint is not configured.");
+    }
+    if (playerId == null || bngCharacterId == null) {
+        throw new Error("Player ID and Bungie Character ID are required.");
+    }
+
+    const apiUrl = `${CHARACTER_DETAIL_ENDPOINT}/${playerId}/${bngCharacterId}`;
+    console.log("Calling GET Character Detail API:", apiUrl);
+
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+        // Handle HTTP errors
+        let errorData: { message?: string } = {};
+        let errorMessage = `Failed to fetch character details for ${bngCharacterId}. Status: ${response.status}`;
+        try { 
+            errorData = await response.json(); 
+            errorMessage = errorData.message || errorMessage; 
+        } catch (e) { 
+            errorMessage = response.statusText ? `${response.statusText} (Status: ${response.status})` : errorMessage; 
+        }
+        console.error("Fetch Character Detail API Error:", errorData);
+        throw new Error(errorMessage);
+    }
+
+    // Handle successful HTTP response
+    try {
+        // Parse the JSON, expecting the [ char_details_object, status_code ] structure
+        const apiResponse: unknown = await response.json();
+
+        // Type Guard to check the structure
+        const isCharDetailsApiResponse = (d: unknown): d is CharacterDetailsApiResponse => {
+            return (
+                Array.isArray(d) &&
+                d.length === 2 &&
+                typeof d[0] === 'object' && d[0] !== null && 'class' in d[0] && // Check for 'class' property
+                typeof d[1] === 'number' // Check status code type
+            );
+        };
+
+        if (isCharDetailsApiResponse(apiResponse)) {
+            const [charDetails, statusCode] = apiResponse; // Destructure
+
+            if (statusCode >= 200 && statusCode < 300) {
+                // Ensure the object has the expected 'class' property before returning
+                if ('class' in charDetails) {
+                    // Add bng_character_id if API doesn't return it, useful for mapping later
+                    if (!charDetails.bng_character_id) {
+                         charDetails.bng_character_id = bngCharacterId;
+                    }
+                    return charDetails; // Return the inner CharacterDetails object
+                } else {
+                     console.error("Character details object missing 'class' property:", charDetails);
+                     throw new Error("Unexpected format for character details object.");
+                }
+            } else {
+                // Handle error status code within the response body
+                console.error(`API returned status code ${statusCode} in character details response body.`);
+                const errorMessage = (charDetails as any)?.message || `API returned status ${statusCode}`;
+                throw new Error(errorMessage);
+            }
+        } else {
+            // If the parsed JSON doesn't match the expected structure
+            console.error("Parsed character details data is not the expected [data, statusCode] array structure:", apiResponse);
+            throw new Error("Unexpected API response format for character details.");
+        }
+
+    } catch (parseError: unknown) {
+        // Handle errors during JSON parsing
+        console.error(`Failed to parse character details response for ${bngCharacterId}:`, parseError);
+        const message = (parseError instanceof Error) ? parseError.message : "Unknown parse error";
+        throw new Error(`Failed to parse character details response: ${message}`);
+    }
+}
 
 /**
  * Fetches activity stats based on selected filters and player ID.
@@ -139,7 +224,6 @@ export async function fetchGearActivityStats(filters: FilterValues, playerId: nu
     try {
         // Parse the JSON, expecting the [ data_array, status_code ] structure
         const apiResponse: unknown = await response.json();
-        console.log("Activity Stats API Success Response (Raw Parsed):", JSON.stringify(apiResponse, null, 2));
 
         // --- Type Guard to check the structure ---
         const isStatsApiResponse = (d: unknown): d is ActivityStatsApiResponse => {
@@ -156,7 +240,6 @@ export async function fetchGearActivityStats(filters: FilterValues, playerId: nu
 
             // Optionally check the status code within the response body if needed
             if (statusCode >= 200 && statusCode < 300) {
-                 console.log("Extracted stats array:", JSON.stringify(statsArray, null, 2));
                  // Validate the inner array elements (optional but good practice)
                  if (statsArray.every(item => typeof item === 'object' && item !== null && 'activity_name' in item)) {
                     return statsArray as StatsData; // Return the inner array containing stats objects

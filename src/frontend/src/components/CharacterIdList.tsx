@@ -8,7 +8,7 @@ interface CharacterIdListProps {
  * Parses the character ID string (e.g., "['id1', 'id2']") into an array of strings.
  * Returns an empty array on failure or invalid input.
  */
-function parseCharacterIds(idString: string | undefined | null): string[] {
+export function parseCharacterIds(idString: string | undefined | null): string[] {
     if (!idString || typeof idString !== 'string') {
         return []; // Return empty array for invalid input
     }

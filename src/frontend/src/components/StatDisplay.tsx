@@ -63,10 +63,13 @@ const GearActivityStats: React.FC<GearActivityStatsProps> = ({ statsData, isLoad
                     </thead>
                     <tbody>
                         {/* Map over the statsData array to render a row for each entry */}
-                        {statsData.map((entry, index) => (
+                        {statsData.map((entry) => (
                             // Use a unique key for each row. instance_id is ideal if unique per request.
                             // Fallback to index if instance_id might not be present or unique.
-                            <StatEntryRow key={entry.instance_id || `stat-entry-${index}`} entry={entry} />
+                            <StatEntryRow 
+                                key={`${entry.instance_id}-${entry.character_id}-${entry.weapon_id}`}
+                                entry={entry} 
+                            />
                         ))}
                     </tbody>
                 </table>
