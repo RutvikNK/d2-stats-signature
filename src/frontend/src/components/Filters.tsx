@@ -23,7 +23,7 @@ const activityModeOptions = [
 // Define type for dropdown options
 type SelectOption = { value: string; label: string; disabled?: boolean };
 
-const Filters: React.FC<FiltersProps> = ({ userData, characterDetails, onApplyFilters, isFetchingStats }) => {
+const Filters: React.FC<FiltersProps> = ({ characterDetails, onApplyFilters, isFetchingStats }) => {
     // State for filter inputs
     const [selectedModeValue, setSelectedModeValue] = useState<string>(''); // Stores the numeric value of the mode
     const [activityName, setActivityName] = useState<string>('');
